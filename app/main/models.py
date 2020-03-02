@@ -12,8 +12,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 class User(object):
     '''A User interacts with the site and CRUDs Rooms.
     '''
-    def __init__(self, username):
+    def __init__(self, username, password=None):
         self.username = username
+        self.password = password
         # self.rooms = []
 
     # def add_room(self, name, stuff=None):
@@ -23,9 +24,9 @@ class User(object):
 
     @classmethod
     def find_user(cls, user):
-        print('looking for {}'.format(user.username))
-        usr = db.find({'username': user.username})
-        print('usr found:', usr)
+        # print('looking for {}'.format(user.username))
+        usr = db.find({'username': user.username}, 'users')
+        # print('usr found:', usr)
         return usr
 
     @classmethod
@@ -33,16 +34,16 @@ class User(object):
         '''Delete all records of user. If None, delete all users.
         '''
         if user:
-            db.delete({'username': user.username})
+            db.delete({'username': user.username}, 'users')
         else:
-            db.reset()
+            db.reset('users')
 
     def set_password(self, password):
         self.password = generate_password_hash(password)
 
     def check_password(self, password):
-        print('checking {} to {} or {}'.format(
-            self.password, password, generate_password_hash(password)))
+        # print('checking {} to {} or {}'.format(
+        #     self.password, password, generate_password_hash(password)))
         return check_password_hash(self.password, password)
 
     # def __str__(self):
@@ -54,14 +55,17 @@ class User(object):
         return f'<User {self.username} {self.password}>'
 
 
-# class BlacklistTokens(object):
-#     def __init__(self, id, jti):
-#         self.id = id
-#         self.jti = jti
+class BlacklistToken(object):
+    def __init__(self, jti):
+        self.jti = jti
 
-#     @classmethod
-#     def is_jti_blacklisted(cls, jti):
-#         pass
+    def add(self):
+        db.create({'jti': self.jti}, 'jwt_tokens')
+
+    @classmethod
+    def is_jti_blacklisted(cls, jti):
+        res = db.find({'jti': jti}, 'jwt_tokens')
+        return bool(res)
 
 
 class Room(object):
@@ -90,6 +94,7 @@ class UserSchema(Schema):
 
     @post_load
     def make_user(self, data, **kwargs):
+        # print('loading user into Class', data)
         return User(**data)
 
     class Meta:

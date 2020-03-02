@@ -23,6 +23,14 @@ def create_app(config_class=Config):
     # REST API extension
     api = Api(app)
 
+    import app.main.resources as resources
+    from app.main import models
+
+    @jwt.token_in_blacklist_loader
+    def check_if_token_in_blacklist(decrypted_token):
+        jti = decrypted_token['jti']
+        return models.BlacklistToken.is_jti_blacklisted(jti)
+
     @app.teardown_appcontext
     def teardown_db(self):
         db = g.pop('db', None)
@@ -31,11 +39,11 @@ def create_app(config_class=Config):
             print('closing db')
             db.client.close()
 
-    import app.main.resources as resources
-
     api.add_resource(resources.Register, '/register')
     api.add_resource(resources.AllUsers, '/users')
     api.add_resource(resources.UserLogin, '/login')
+    api.add_resource(resources.UserLogoutAccess, '/logout/access')
+    api.add_resource(resources.UserLogoutRefresh, '/logout/refresh')
     api.add_resource(resources.TokenRefresh, '/token/refresh')
     api.add_resource(resources.TestResource, '/test')
 

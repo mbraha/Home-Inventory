@@ -1,5 +1,5 @@
 from flask import render_template, jsonify, request
-from app.main.models import User, Room, UserSchema, RoomSchema
+from app.main.models import User, Room, BlacklistToken, UserSchema, RoomSchema
 from flask_restful import Resource, reqparse
 from app.db import db
 from pymongo.errors import DuplicateKeyError
@@ -19,7 +19,7 @@ user_schema = UserSchema()
 
 class AllUsers(Resource):
     def get(self):
-        cur = db.find_all({})
+        cur = db.find_all({}, 'users')
         users = []
         for doc in cur:
             users.append(user_schema.dump(doc)['username'])
@@ -37,7 +37,7 @@ class Register(Resource):
         new_user = User(data['username'])
         if not User.find_user(new_user):
             new_user.set_password(data['password'])
-            db.create(user_schema.dump(new_user))
+            db.create(user_schema.dump(new_user), 'users')
             # JWT stuff
             access_token = create_access_token(identity=data['username'])
             refresh_token = create_refresh_token(identity=data['username'])
@@ -61,6 +61,7 @@ class UserLogin(Resource):
                 'message': 'User {} doesn\'t exist'.format(data['username'])
             }
         # same password?
+        # print('****', user_schema.load(db_user))
         if user_schema.load(db_user).check_password(data['password']):
             access_token = create_access_token(identity=data['username'])
             refresh_token = create_refresh_token(identity=data['username'])
@@ -71,6 +72,35 @@ class UserLogin(Resource):
             }
         else:
             return {"message": "Login unsuccessful"}
+
+
+class UserLogoutAccess(Resource):
+    @jwt_required
+    def post(self):
+        jti = get_raw_jwt()['jti']
+        try:
+            blacklisted_token = BlacklistToken(jti)
+            blacklisted_token.add()
+
+            return {'message': 'Access token has been revoked'}, 200
+        except:
+            return {
+                'message': 'Something went wrong with access token on logout'
+            }, 500
+
+
+class UserLogoutRefresh(Resource):
+    @jwt_refresh_token_required
+    def post(self):
+        jti = get_raw_jwt()['jti']
+        try:
+            blacklisted_token = BlacklistToken(jti)
+            blacklisted_token.add()
+            return {'message': 'Refresh token has been revoked'}, 200
+        except:
+            return {
+                'message': 'Something went wrong with refresh token on logout'
+            }, 500
 
 
 class TokenRefresh(Resource):
