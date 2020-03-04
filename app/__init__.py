@@ -26,6 +26,9 @@ def create_app(config_class=Config):
     import app.main.resources as resources
     from app.main import models
 
+    from app.main import bp as main_bp
+    app.register_blueprint(main_bp)
+
     @jwt.token_in_blacklist_loader
     def check_if_token_in_blacklist(decrypted_token):
         jti = decrypted_token['jti']
