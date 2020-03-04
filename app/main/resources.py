@@ -7,6 +7,7 @@ from flask_jwt_extended import (create_access_token, create_refresh_token,
                                 jwt_required, jwt_refresh_token_required,
                                 get_jwt_identity, get_raw_jwt)
 
+# Like argparse, but for requests to these Resources.
 parser = reqparse.RequestParser()
 parser.add_argument('username',
                     help='This field cannot be blank',
@@ -14,10 +15,13 @@ parser.add_argument('username',
 parser.add_argument('password',
                     help='This field cannot be blank',
                     required=True)
+
+# For better serialization and stuff
 user_schema = UserSchema()
 
 
 class AllUsers(Resource):
+    # Get all docs from users table and return a list of usernames
     def get(self):
         cur = db.find_all({}, 'users')
         users = []

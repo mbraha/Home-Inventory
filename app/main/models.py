@@ -3,11 +3,6 @@ from marshmallow import Schema, fields, post_load, EXCLUDE
 from app.db import db
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# class AddObject(object):
-#     '''Base class
-#     '''
-#     def
-
 
 class User(object):
     '''A User interacts with the site and CRUDs Rooms.
@@ -46,15 +41,12 @@ class User(object):
         #     self.password, password, generate_password_hash(password)))
         return check_password_hash(self.password, password)
 
-    # def __str__(self):
-    #     print(f'username: {self.username}')
-    #     print(f'password_hash: {self.password_hash}')
-    # print(f'rooms: {self.rooms} ({len(self.rooms)})')
-
     def __repr__(self):
         return f'<User {self.username} {self.password}>'
 
 
+# Framework and internet recommended way of handling blacklisted
+# tokens, those that should no longer be given access.
 class BlacklistToken(object):
     def __init__(self, jti):
         self.jti = jti
