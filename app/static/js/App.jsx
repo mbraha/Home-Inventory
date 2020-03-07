@@ -5,6 +5,7 @@ import LoginForm from "./comps/Login";
 
 class App extends Component {
   state = {
+    current_user: "",
     isLoggedIn: false,
     access_token: null,
     refresh_token: null
