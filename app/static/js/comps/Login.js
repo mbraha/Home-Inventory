@@ -3,7 +3,7 @@ import { Button, Form } from "semantic-ui-react";
 import { response_to_json } from "../utils";
 import { Redirect } from "react-router-dom";
 
-class RegisterForm extends Component {
+class LoginForm extends Component {
   constructor(props) {
     super(props);
 
@@ -13,15 +13,15 @@ class RegisterForm extends Component {
   handleChange = (e, { name, value }) => this.setState({ [name]: value });
 
   handleSubmit = async () => {
-    console.log("handleSubmit");
+    console.log("Login handleSubmit");
     const query =
       "username=" + this.state.username + "&password=" + this.state.password;
-    const response = await fetch("http://127.0.0.1:5000/register?" + query, {
+    const response = await fetch("http://127.0.0.1:5000/login?" + query, {
       method: "POST",
       body: this.state
     });
     const status = await response_to_json(response);
-    console.log("response", status, status.status);
+    console.log("Login response", status, status.status);
     this.setState({ username: "", password: "" });
     this.props.setLoggedInStatus(status);
   };
@@ -30,7 +30,7 @@ class RegisterForm extends Component {
     // console.log("Register render props", this.props);
     const { username, password } = this.state;
     if (this.props.isLoggedIn) {
-      console.log("redirecting away from register");
+      console.log("redirecting away from Login");
       return <Redirect to="/" />;
     }
     return (
@@ -58,4 +58,4 @@ class RegisterForm extends Component {
   }
 }
 
-export default RegisterForm;
+export default LoginForm;
