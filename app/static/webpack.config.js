@@ -1,10 +1,22 @@
 const resolve = require("path").resolve;
 
 module.exports = {
+  mode: "development",
   // When debugging, allow error to be found in source code
   devtool: "eval-source-map",
   // entry file to figure out dependencies from
   entry: __dirname + "/js/index.jsx",
+  // For webpacks HMR
+  devServer: {
+    contentBase: resolve(__dirname, "../public"),
+    publicPath: resolve("../public"),
+    watchContentBase: true,
+    // Have devServer only serve some static assets, let
+    // Flask backend serve rest.
+    proxy: {
+      "/": "http://127.0.0.1:5000"
+    }
+  },
   // where webpack will dump built assets
   output: {
     // local path on disk
