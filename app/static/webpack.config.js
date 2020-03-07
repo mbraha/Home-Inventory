@@ -23,10 +23,26 @@ module.exports = {
       {
         // Babel loaded for JSX -> JS
         test: /\.jsx?/,
-        loader: "babel-loader",
         exclude: /node_modules/,
-        query: {
-          presets: ["@babel/preset-env", "@babel/preset-react"]
+
+        use: {
+          loader: "babel-loader",
+          options: {
+            presets: [
+              [
+                "@babel/preset-env",
+                {
+                  targets: {
+                    node: "current"
+                  }
+                }
+              ],
+              ["@babel/preset-react"]
+            ],
+            plugins: [
+              ["@babel/plugin-proposal-class-properties", { loose: true }]
+            ]
+          }
         }
       },
       {

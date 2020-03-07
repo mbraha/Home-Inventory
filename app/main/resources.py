@@ -36,7 +36,13 @@ class AllUsers(Resource):
 
 class Register(Resource):
     def post(self):
-        data = parser.parse_args()
+        data = None
+        try:
+            data = parser.parse_args()
+        except Exception as err:
+            print('Register POST err', err)
+
+        print('Register POST', data)
         # First, does the requested user account exist?
         new_user = User(data['username'])
         if not User.find_user(new_user):
