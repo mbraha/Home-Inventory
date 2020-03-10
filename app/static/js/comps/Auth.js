@@ -14,10 +14,10 @@ class AuthForm extends Component {
   handleChange = (e, { name, value }) => this.setState({ [name]: value });
 
   handleSubmit = async () => {
+    // TODO: Strip trailing whitespace
     console.log("handleSubmit", this.endpoint);
-    const query =
-      "username=" + this.state.username + "&password=" + this.state.password;
-    console.log("handleSubmit query", query);
+    const { username, password } = this.state;
+    const query = "username=" + username + "&password=" + password;
     const response = await fetch(
       "http://127.0.0.1:5000/" + this.endpoint + "?" + query,
       {
@@ -28,7 +28,7 @@ class AuthForm extends Component {
     const status = await response_to_json(response);
     console.log("response", status, status.status);
     this.setState({ username: "", password: "" });
-    this.props.setLoggedInStatus(status);
+    this.props.setLoggedInStatus(status, username);
   };
 
   render() {

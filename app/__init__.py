@@ -7,6 +7,8 @@ from flask_restful import Api
 from marshmallow import Schema, fields
 from bson import ObjectId
 
+cors = CORS()
+
 
 def create_app(config_class=Config):
 
@@ -17,7 +19,8 @@ def create_app(config_class=Config):
 
     # Extension stuff
     # Because we want JS, handles CORS.
-    CORS(app)
+    # CORS(app)
+    cors.init_app(app)
     # JWT for auth.
     jwt = JWTManager(app)
     # REST API extension
@@ -44,9 +47,10 @@ def create_app(config_class=Config):
 
     api.add_resource(resources.Register, '/register')
     api.add_resource(resources.AllUsers, '/users')
-    api.add_resource(resources.UserLogin, '/login')
-    api.add_resource(resources.UserLogoutAccess, '/logout/access')
-    api.add_resource(resources.UserLogoutRefresh, '/logout/refresh')
+    api.add_resource(resources.Login, '/login')
+    api.add_resource(resources.Logout, '/logout')
+    # api.add_resource(resources.UserLogoutAccess, '/logout/access')
+    # api.add_resource(resources.UserLogoutRefresh, '/logout/refresh')
     api.add_resource(resources.TokenRefresh, '/token/refresh')
     api.add_resource(resources.TestResource, '/test')
 

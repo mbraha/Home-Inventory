@@ -6,21 +6,30 @@ import LoginForm from "./comps/Login";
 class App extends Component {
   state = {
     current_user: "",
-    isLoggedIn: false,
-    access_token: null,
-    refresh_token: null
+    isLoggedIn: false
   };
 
-  setLoggedInStatus = status => {
+  // componentDidMount() {
+  //   //
+  // }
+
+  async silentRefresh() {
+    // try to refresh token
+    await fetch("http://127.0.0.1:5000/token/refresh", {
+      method: "POST",
+      credentials: "same-origin"
+    });
+  }
+
+  setLoggedInStatus = (status, username) => {
     if (status.hasOwnProperty("error")) {
       console.log("status has error");
       this.setState({ isLoggedIn: false });
     } else {
-      // console.log("status", status);
+      console.log("status", status);
       this.setState({
         isLoggedIn: true,
-        access_token: status.access_token,
-        refresh_token: status.refresh_token
+        current_user: username
       });
     }
   };
