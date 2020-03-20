@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import { Switch, Route } from "react-router-dom";
 import RegisterForm from "./comps/Register";
 import LoginForm from "./comps/Login";
-import LogoutForm from "./comps/Logout";
+import Logout from "./comps/Logout";
 import { get_new_access_token } from "./utils";
 
 class App extends Component {
@@ -31,6 +31,7 @@ class App extends Component {
           refresh_token: refresh_token
         });
       } else {
+        // Failed to get access token
         this.setState({
           refresh_token
         });
@@ -55,6 +56,9 @@ class App extends Component {
     if (status.hasOwnProperty("error")) {
       console.log("status has error");
       this.setState({ isLoggedIn: false });
+    } else if (status.hasOwnProperty("revoked")) {
+      localStorage.removeItem("refresh_token");
+      this.setState({ isLoggedIn: false });
     } else {
       // console.log("status", status);
       localStorage.setItem("refresh_token", status.refresh_token);
@@ -68,7 +72,7 @@ class App extends Component {
 
   render() {
     console.log("APP state", this.state);
-    const { isLoggedIn } = this.state;
+    const { isLoggedIn, access_token, refresh_token } = this.state;
     return (
       <Switch>
         <Route exact path="/">
@@ -91,9 +95,11 @@ class App extends Component {
         </Route>
 
         <Route path="/logout">
-          <LogoutForm
+          <Logout
             setLoggedInStatus={this.setLoggedInStatus}
             isLoggedIn={isLoggedIn}
+            access_token={access_token}
+            refresh_token={refresh_token}
           />
         </Route>
       </Switch>
