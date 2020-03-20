@@ -1,6 +1,5 @@
 import React, { Component } from "react";
 import { Button, Form } from "semantic-ui-react";
-import { response_to_json } from "../utils";
 import { Redirect } from "react-router-dom";
 
 class AuthForm extends Component {
@@ -25,7 +24,7 @@ class AuthForm extends Component {
         body: this.state
       }
     );
-    const status = await response_to_json(response);
+    const status = await response.json();
     console.log("response", status, status.status);
     this.setState({ username: "", password: "" });
     this.props.setLoggedInStatus(status);

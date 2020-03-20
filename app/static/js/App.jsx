@@ -2,32 +2,55 @@ import React, { Component } from "react";
 import { Switch, Route } from "react-router-dom";
 import RegisterForm from "./comps/Register";
 import LoginForm from "./comps/Login";
-import { response_to_json } from "./utils";
+import LogoutForm from "./comps/Logout";
+import { get_new_access_token } from "./utils";
 
 class App extends Component {
   state = {
     current_user: "",
     isLoggedIn: false,
     access_token: null,
-    refresh_token: null
+    refresh_token: null,
+    timer_id: null
   };
 
   async componentDidMount() {
     const refresh_token = localStorage.getItem("refresh_token");
     console.log("got token from storage", refresh_token);
-
-    // Try and get a new access token
-    const response = await fetch("http://127.0.0.1:5000/token/refresh", {
-      method: "POST",
-      headers: new Headers({ Authorization: "Bearer " + refresh_token })
-    });
-    const refresher = await response_to_json(response);
-    console.log("App didMount refresher", refresher);
-    if (refresher.hasOwnProperty("access_token")) {
-      this.setState({ isLoggedIn: true, access_token: refresher });
+    if (refresh_token === null) {
+      // User needs to register/login
+      return 0;
+    } else {
+      // Try and get a new access token
+      const new_access_token = await get_new_access_token(refresh_token);
+      console.log("App didMount new_token", new_access_token);
+      if (new_access_token && new_access_token.hasOwnProperty("access_token")) {
+        this.setState({
+          isLoggedIn: true,
+          access_token: new_access_token.access_token,
+          refresh_token: refresh_token
+        });
+      } else {
+        this.setState({
+          refresh_token
+        });
+      }
+      const timer_id = setInterval(() => this.silentRefresh(), 1000 * 60 * 14);
+      this.setState({ timer_id });
     }
   }
 
+  async silentRefresh() {
+    console.log("silentRefresh");
+    const { refresh_token } = this.state;
+    const new_access_token = await get_new_access_token(refresh_token);
+    console.log("App silent_refresh new_access_token", new_access_token);
+    if (new_access_token && new_access_token.hasOwnProperty("access_token")) {
+      this.setState({ isLoggedIn: true, access_token: new_access_token });
+    }
+  }
+
+  // For Auth forms to use.
   setLoggedInStatus = status => {
     if (status.hasOwnProperty("error")) {
       console.log("status has error");
@@ -62,6 +85,13 @@ class App extends Component {
 
         <Route path="/login">
           <LoginForm
+            setLoggedInStatus={this.setLoggedInStatus}
+            isLoggedIn={isLoggedIn}
+          />
+        </Route>
+
+        <Route path="/logout">
+          <LogoutForm
             setLoggedInStatus={this.setLoggedInStatus}
             isLoggedIn={isLoggedIn}
           />
