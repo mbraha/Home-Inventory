@@ -1,26 +1,24 @@
 import React, { Component } from "react";
 import { Menu } from "semantic-ui-react";
 import { full_logout } from "../utils";
+import { AuthContext } from "../AuthProvider";
 
 class LogoutButton extends Component {
-  constructor(props) {
-    super(props);
-  }
+  static contextType = AuthContext;
 
   onClick = () => {
-    if (full_logout(this.props.access_token, this.props.refresh_token)) {
+    const { access_token, refresh_token } = this.context.state;
+    const { setLoggedInStatus } = this.context;
+
+    if (full_logout(access_token, refresh_token)) {
       console.log("logout onclick if block");
-      this.props.setLoggedInStatus({ revoked: "user logging out" });
+      setLoggedInStatus({ revoked: "user logging out" });
     }
   };
 
   render() {
-    console.log("Logout props", this.props);
-    return (
-      <Menu.Item content="Logout" onClick={this.onClick}>
-        Logout
-      </Menu.Item>
-    );
+    console.log("Logout context", this.context);
+    return <Menu.Item content="Logout" onClick={this.onClick}></Menu.Item>;
   }
 }
 

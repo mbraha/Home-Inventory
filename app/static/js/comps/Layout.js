@@ -5,10 +5,7 @@ import Header from "./Header";
 export default props => {
   return (
     <Container>
-      <Header
-        setLoggedInStatus={props.setLoggedInStatus}
-        isLoggedIn={props.isLoggedIn}
-      />
+      <Header />
       {props.children}
     </Container>
   );
