@@ -4,11 +4,11 @@ import { Link } from "react-router-dom";
 import LogoutButton from "./Logout";
 import { AuthContext } from "../AuthProvider";
 
-class Header extends Component {
+class NavBar extends Component {
   static contextType = AuthContext;
 
   render() {
-    console.log("Header render context", this.context);
+    console.log("NavBar render context", this.context);
     let rightMenu = null;
     if (this.context.state.isLoggedIn) {
       rightMenu = (
@@ -30,7 +30,7 @@ class Header extends Component {
     }
     return (
       <Menu style={{ marginTop: "10px" }}>
-        <Menu.Item as={Link} to="/">
+        <Menu.Item header as={Link} to="/">
           Home-Inventory
         </Menu.Item>
         <Menu.Item>Rooms</Menu.Item>
@@ -40,4 +40,4 @@ class Header extends Component {
   }
 }
 
-export default Header;
+export default NavBar;

@@ -1,11 +1,11 @@
 import React from "react";
 import { Container } from "semantic-ui-react";
-import Header from "./Header";
+import NavBar from "./NavBar";
 
 export default props => {
   return (
     <Container>
-      <Header />
+      <NavBar />
       {props.children}
     </Container>
   );
