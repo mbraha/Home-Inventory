@@ -1,9 +1,8 @@
 import React, { Component } from "react";
-import { Button } from "semantic-ui-react";
-import { Redirect } from "react-router-dom";
+import { Menu } from "semantic-ui-react";
 import { full_logout } from "../utils";
 
-class Logout extends Component {
+class LogoutButton extends Component {
   constructor(props) {
     super(props);
   }
@@ -17,12 +16,12 @@ class Logout extends Component {
 
   render() {
     console.log("Logout props", this.props);
-    if (!this.props.isLoggedIn) {
-      console.log("redirecting away from logout");
-      return <Redirect to="/" />;
-    }
-    return <Button content="Logout" onClick={this.onClick}></Button>;
+    return (
+      <Menu.Item content="Logout" onClick={this.onClick}>
+        Logout
+      </Menu.Item>
+    );
   }
 }
 
-export default Logout;
+export default LogoutButton;

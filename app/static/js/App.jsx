@@ -1,13 +1,11 @@
 import React, { Component } from "react";
 import { Switch, Route } from "react-router-dom";
-import RegisterForm from "./comps/Register";
-import LoginForm from "./comps/Login";
-import Logout from "./comps/Logout";
+import { RegisterForm, LoginForm, LogoutButton, HomePage } from "./comps";
 import { get_new_access_token } from "./utils";
 
 class App extends Component {
   state = {
-    current_user: "",
+    current_user: "nobody",
     isLoggedIn: false,
     access_token: null,
     refresh_token: null,
@@ -52,7 +50,7 @@ class App extends Component {
   }
 
   // For Auth forms to use.
-  setLoggedInStatus = status => {
+  setLoggedInStatus = (status, username) => {
     if (status.hasOwnProperty("error")) {
       console.log("status has error");
       this.setState({ isLoggedIn: false });
@@ -65,19 +63,23 @@ class App extends Component {
       this.setState({
         isLoggedIn: true,
         access_token: status.access_token,
-        refresh_token: status.refresh_token
+        refresh_token: status.refresh_token,
+        current_user: username
       });
     }
   };
 
   render() {
     console.log("APP state", this.state);
-    const { isLoggedIn, access_token, refresh_token } = this.state;
+    const { isLoggedIn, current_user } = this.state;
     return (
       <Switch>
         <Route exact path="/">
-          <h1>home!</h1>
-          <h2>Are you logged in? {isLoggedIn.toString().toUpperCase()}</h2>
+          <HomePage
+            isLoggedIn={isLoggedIn}
+            current_user={current_user}
+            setLoggedInStatus={this.setLoggedInStatus}
+          ></HomePage>
         </Route>
 
         <Route path="/register">
@@ -91,15 +93,6 @@ class App extends Component {
           <LoginForm
             setLoggedInStatus={this.setLoggedInStatus}
             isLoggedIn={isLoggedIn}
-          />
-        </Route>
-
-        <Route path="/logout">
-          <Logout
-            setLoggedInStatus={this.setLoggedInStatus}
-            isLoggedIn={isLoggedIn}
-            access_token={access_token}
-            refresh_token={refresh_token}
           />
         </Route>
       </Switch>

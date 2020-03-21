@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import { Button, Form } from "semantic-ui-react";
 import { Redirect } from "react-router-dom";
+import Layout from "./Layout";
 
 class AuthForm extends Component {
   constructor(props) {
@@ -14,8 +15,8 @@ class AuthForm extends Component {
 
   handleSubmit = async () => {
     console.log("handleSubmit", this.endpoint);
-    const query =
-      "username=" + this.state.username + "&password=" + this.state.password;
+    const { username } = this.state;
+    const query = "username=" + username + "&password=" + this.state.password;
     console.log("handleSubmit query", query);
     const response = await fetch(
       "http://127.0.0.1:5000/" + this.endpoint + "?" + query,
@@ -26,8 +27,9 @@ class AuthForm extends Component {
     );
     const status = await response.json();
     console.log("response", status, status.status);
+
     this.setState({ username: "", password: "" });
-    this.props.setLoggedInStatus(status);
+    this.props.setLoggedInStatus(status, username);
   };
 
   render() {
@@ -38,26 +40,28 @@ class AuthForm extends Component {
       return <Redirect to="/" />;
     }
     return (
-      <Form onSubmit={this.handleSubmit}>
-        <Form.Input
-          label="Username"
-          placeholder="Username"
-          name="username"
-          value={username}
-          width={6}
-          onChange={this.handleChange}
-        ></Form.Input>
-        <Form.Input
-          label="Password"
-          placeholder="Password"
-          name="password"
-          width={6}
-          value={password}
-          type="password"
-          onChange={this.handleChange}
-        ></Form.Input>
-        <Button type="submit">Submit</Button>
-      </Form>
+      <Layout>
+        <Form onSubmit={this.handleSubmit}>
+          <Form.Input
+            label="Username"
+            placeholder="Username"
+            name="username"
+            value={username}
+            width={6}
+            onChange={this.handleChange}
+          ></Form.Input>
+          <Form.Input
+            label="Password"
+            placeholder="Password"
+            name="password"
+            width={6}
+            value={password}
+            type="password"
+            onChange={this.handleChange}
+          ></Form.Input>
+          <Button type="submit">Submit</Button>
+        </Form>
+      </Layout>
     );
   }
 }
