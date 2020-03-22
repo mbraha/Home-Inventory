@@ -1,8 +1,25 @@
 import React, { Component } from "react";
 import Greeter from "./Greeter";
-import { Grid, Divider, Header } from "semantic-ui-react";
+import RoomList from "./Room";
+import { Grid, Divider } from "semantic-ui-react";
+import { AuthContext } from "../AuthProvider";
 
 class HomePage extends Component {
+  /*
+  Home page is responsible for main UX. It knows the user and 
+  their rooms.
+  */
+  static contextType = AuthContext;
+  constructor(props) {
+    super(props);
+
+    console.log("HomePage constructor", props);
+  }
+
+  componentDidMount() {
+    console.log("HomePage componentDidMount", this.context);
+  }
+
   render() {
     console.log("Homepage render");
     return (
@@ -14,12 +31,10 @@ class HomePage extends Component {
           <Divider hidden>Div</Divider>
         </Grid.Row>
         <Grid.Row columns={3}>
-          <Grid.Column width={3}>
+          <Grid.Column width={4}>
             <Grid.Row>
-              <Header>Your Rooms</Header>
+              <RoomList></RoomList>
             </Grid.Row>
-            <Grid.Row>Room 1</Grid.Row>
-            <Grid.Row>Room 2</Grid.Row>
           </Grid.Column>
           <Grid.Column width={2}>
             <Divider hidden vertical>
