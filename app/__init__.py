@@ -50,4 +50,6 @@ def create_app(config_class=Config):
     api.add_resource(resources.TokenRefresh, '/token/refresh')
     api.add_resource(resources.TestResource, '/test')
 
+    api.add_resource(resources.AddRoom, '/add_room')
+
     return app

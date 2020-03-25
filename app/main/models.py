@@ -7,20 +7,34 @@ from werkzeug.security import generate_password_hash, check_password_hash
 class User(object):
     '''A User interacts with the site and CRUDs Rooms.
     '''
-    def __init__(self, username, password=None):
+    def __init__(self, username, password=None, rooms=None):
         self.username = username
         self.password = password
-        # self.rooms = []
+        if rooms is None:
+            self.rooms = []
+        else:
+            self.rooms = rooms
+        print("User __init__", self.rooms, type(self.rooms))
 
-    # def add_room(self, name, stuff=None):
-    #     room = Room(name, self.username, stuff)
-    #     self.rooms.append(room)
-    #     db.create(room)
+    def add_room(self, name, stuff=None):
+        ''' A wrapper for Room's constructor
+        '''
+        room_schema = RoomSchema(many=True)
+        room = Room(name, stuff)
+        self.rooms.append(room)
+
+        # Dump rooms for db to handle
+        rooms = room_schema.dump(self.rooms)
+        print('room added, adding to db', rooms)
+        return db.update({'username': self.username},
+                         {"$set": {
+                             "rooms": rooms
+                         }}, 'users')
 
     @classmethod
-    def find_user(cls, user):
+    def find_user(cls, username):
         # print('looking for {}'.format(user.username))
-        usr = db.find({'username': user.username}, 'users')
+        usr = db.find({'username': username}, 'users')
         # print('usr found:', usr)
         return usr
 
@@ -66,23 +80,29 @@ class Room(object):
     def __init__(self, name, stuff=None):
         # stuff: A list of tuples: (item, price)
         self.name = name
-        self.owner = owner
-        self.stuff = stuff
+        if stuff is None:
+            self.stuff = []
+        else:
+            self.stuff = stuff
+
+    # def __repr__(self):
+    #     return f'<Room {self.name} has {len(self.stuff)} stuff.>'
 
 
 class RoomSchema(Schema):
     name = fields.Str()
-    owner = fields.Str()
-    stuff = fields.List(fields.Tuple((fields.Integer(), fields.Float())))
+    stuff = fields.List(fields.Tuple((fields.Str(), fields.Str())))
 
-    def __repr__(self):
-        return f'<Room {self.name}>'
+    @post_load
+    def make_room(self, data, **kwargs):
+        # print('loading room into Class', data)
+        return Room(**data)
 
 
 class UserSchema(Schema):
     username = fields.Str(required=True)
     password = fields.Str(required=True)
-    # rooms = fields.Nested(RoomSchema)
+    rooms = fields.List(fields.Nested(RoomSchema))
 
     @post_load
     def make_user(self, data, **kwargs):

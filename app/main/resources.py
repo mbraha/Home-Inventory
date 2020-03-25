@@ -8,13 +8,21 @@ from flask_jwt_extended import (create_access_token, create_refresh_token,
                                 get_jwt_identity, get_raw_jwt)
 
 # Like argparse, but for requests to these Resources.
-parser = reqparse.RequestParser()
-parser.add_argument('username',
-                    help='This field cannot be blank',
-                    required=True)
-parser.add_argument('password',
-                    help='This field cannot be blank',
-                    required=True)
+auth_parser = reqparse.RequestParser()
+auth_parser.add_argument('username',
+                         help='This field cannot be blank',
+                         required=True)
+auth_parser.add_argument('password',
+                         help='This field cannot be blank',
+                         required=True)
+
+room_parser = reqparse.RequestParser()
+room_parser.add_argument('owner',
+                         help='This field cannot be blank',
+                         required=True)
+room_parser.add_argument('room_name',
+                         help='This field cannot be blank',
+                         required=True)
 
 # For better serialization and stuff
 user_schema = UserSchema()
@@ -26,7 +34,7 @@ class AllUsers(Resource):
         cur = db.find_all({}, 'users')
         users = []
         for doc in cur:
-            users.append(user_schema.dump(doc)['username'])
+            users.append(user_schema.dump(doc))
         return users
 
     def delete(self):
@@ -34,18 +42,38 @@ class AllUsers(Resource):
         return {'message': 'deleted all users'}
 
 
+class AddRoom(Resource):
+    # Add a room for a user
+    # @jwt_required
+    def post(self):
+        data = None
+        try:
+            data = room_parser.parse_args()
+        except Exception as err:
+            print('AddRoom POST err', err)
+
+        print('AddRoom POST', data)
+        db_user = User.find_user(data['owner'])
+        if not db_user:
+            return {'message': 'User {} doesn\'t exist'.format(data['owner'])}
+        user = user_schema.load(db_user)
+        res = user.add_room(data['room_name'])
+
+        return {'success': data['room_name'] + ' added!'}, 200
+
+
 class Register(Resource):
     def post(self):
         data = None
         try:
-            data = parser.parse_args()
+            data = auth_parser.parse_args()
         except Exception as err:
             print('Register POST err', err)
 
         print('Register POST', data)
         # First, does the requested user account exist?
-        new_user = User(data['username'])
-        if not User.find_user(new_user):
+        if not User.find_user(data['username']):
+            new_user = User(data['username'])
             new_user.set_password(data['password'])
             db.create(user_schema.dump(new_user), 'users')
             # JWT stuff
@@ -64,8 +92,8 @@ class Register(Resource):
 
 class UserLogin(Resource):
     def post(self):
-        data = parser.parse_args()
-        db_user = User.find_user(User(data['username']))
+        data = auth_parser.parse_args()
+        db_user = User.find_user(data['username'])
         if not db_user:
             return {
                 'message': 'User {} doesn\'t exist'.format(data['username'])
