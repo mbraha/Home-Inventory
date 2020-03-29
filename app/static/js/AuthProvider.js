@@ -24,18 +24,21 @@ class AuthProvider extends Component {
       });
     } else {
       // Try and get a new access token
-      const new_access_token = await get_new_access_token(refresh_token);
-      console.log("AuthProvider didMount new_token", new_access_token);
-      if (new_access_token && new_access_token.hasOwnProperty("access_token")) {
+      const new_access_token_result = await get_new_access_token(refresh_token);
+      console.log("AuthProvider didMount new_token", new_access_token_result);
+      if (
+        new_access_token_result &&
+        new_access_token_result.hasOwnProperty("access_token")
+      ) {
         this.setState({
           isLoggedIn: true,
-          access_token: new_access_token.access_token,
+          access_token: new_access_token_result.access_token,
           refresh_token: refresh_token
         });
-      } else {
-        // Failed to get access token
+      } else if (new_access_token_result == 401) {
+        // Refresh token revoked, failed to get access
         this.setState({
-          refresh_token
+          refresh_token: null
         });
       }
       const timer_id = setInterval(() => this.silentRefresh(), 1000 * 60 * 14);

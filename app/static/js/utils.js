@@ -5,13 +5,17 @@ export async function get_new_access_token(token) {
       method: "POST",
       headers: new Headers({ Authorization: "Bearer " + token })
     });
+    console.log("get_new_access_token response", response);
     result = await response.json();
     console.log("get_new_access_token result", result);
+    if (response.status == 200) {
+      return result;
+    } else {
+      return response.status;
+    }
   } catch (error) {
     console.log("get_new_access_token error", error);
   }
-
-  return result;
 }
 
 export async function full_logout(access_token, refresh_token) {
