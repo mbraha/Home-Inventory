@@ -4,45 +4,51 @@ import { get_new_access_token } from "./utils";
 const AuthContext = React.createContext();
 
 class AuthProvider extends Component {
-  state = {
-    current_user: "nobody",
-    isLoggedIn: false,
-    access_token: null,
-    refresh_token: null,
-    timer_id: null
-  };
-
-  async componentDidMount() {
-    console.log("AuthProvider componentDidMount");
+  constructor() {
+    super();
+    console.log("AuthProvider constructor");
     const refresh_token = localStorage.getItem("refresh_token");
     const current_user = localStorage.getItem("current_user");
     console.log("got token from storage", refresh_token);
-    if (refresh_token === null) {
-      // User needs to register/login
-      this.setState({
-        current_user
-      });
-    } else {
+    this.state = {
+      current_user: current_user,
+      isLoggedIn: false,
+      access_token: null,
+      refresh_token: refresh_token,
+      timer_id: null
+    };
+  }
+
+  async componentDidMount() {
+    console.log("AuthProvider componentDidMount");
+    let { refresh_token } = this.state;
+    if (refresh_token) {
       // Try and get a new access token
-      const new_access_token_result = await get_new_access_token(refresh_token);
+      const new_access_token_result = await get_new_access_token(
+        this.state.refresh_token
+      );
       console.log("AuthProvider didMount new_token", new_access_token_result);
+      let loginStatus = false;
+      let access_token = null;
+      let timer_id = null;
       if (
         new_access_token_result &&
         new_access_token_result.hasOwnProperty("access_token")
       ) {
-        this.setState({
-          isLoggedIn: true,
-          access_token: new_access_token_result.access_token,
-          refresh_token: refresh_token
-        });
+        loginStatus = true;
+        access_token = new_access_token_result.access_token;
+        timer_id = setInterval(() => this.silentRefresh(), 1000 * 60 * 14);
       } else if (new_access_token_result == 401) {
-        // Refresh token revoked, failed to get access
-        this.setState({
-          refresh_token: null
-        });
+        // Refresh token revoked
+        refresh_token = null;
       }
-      const timer_id = setInterval(() => this.silentRefresh(), 1000 * 60 * 14);
-      this.setState({ timer_id: timer_id, current_user: current_user });
+
+      this.setState({
+        timer_id: timer_id,
+        isLoggedIn: loginStatus,
+        refresh_token: refresh_token,
+        access_token: access_token
+      });
     }
   }
 

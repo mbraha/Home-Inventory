@@ -1,14 +1,12 @@
 export async function get_new_access_token(token) {
-  let result = null;
   try {
     const response = await fetch("http://127.0.0.1:5000/token/refresh", {
       method: "POST",
       headers: new Headers({ Authorization: "Bearer " + token })
     });
     console.log("get_new_access_token response", response);
-    result = await response.json();
-    console.log("get_new_access_token result", result);
     if (response.status == 200) {
+      const result = await response.json();
       return result;
     } else {
       return response.status;
@@ -35,5 +33,22 @@ export async function full_logout(access_token, refresh_token) {
   } catch (error) {
     console.log("logout failure", error);
     return false;
+  }
+}
+
+export async function get_users() {
+  try {
+    const response = await fetch("http://127.0.0.1:5000/users", {
+      method: "GET"
+    });
+    if (response.status == 200) {
+      const result = await response.json();
+      return result;
+    } else {
+      return response.status;
+    }
+  } catch (error) {
+    console.log("get users failure", error);
+    return null;
   }
 }

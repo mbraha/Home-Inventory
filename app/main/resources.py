@@ -30,6 +30,8 @@ user_schema = UserSchema()
 
 class AllUsers(Resource):
     # Get all docs from users table and return a list of usernames
+    # TODO: Implement single user endpoint when scaling becomes an issue
+    # For now, client can request all users and filter return data.
     def get(self):
         cur = db.find_all({}, 'users')
         users = []
