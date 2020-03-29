@@ -52,3 +52,21 @@ export async function get_users() {
     return null;
   }
 }
+
+export async function add_room(owner, room_name) {
+  try {
+    const query = "owner=" + owner + "room_name=" + room_name;
+    const response = await fetch("http://127.0.0.1:5000/add_room?" + query, {
+      method: "POST"
+    });
+    if (response.status == 200) {
+      const result = await response.json();
+      return result;
+    } else {
+      return response.status;
+    }
+  } catch (error) {
+    console.log("add_room failure", error);
+    return null;
+  }
+}

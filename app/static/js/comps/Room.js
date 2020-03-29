@@ -1,10 +1,11 @@
 import React, { Component } from "react";
-import { List, Header, Button, Icon, Grid } from "semantic-ui-react";
+import { List, Header, Input, Icon, Grid, Modal } from "semantic-ui-react";
+import { add_room } from "../utils";
+import { AuthContext } from "../AuthProvider";
 
 class RoomListItem extends Component {
   constructor(props) {
     super(props);
-    console.log("RoomListItem constructor props", props);
 
     this.state = {
       name: "",
@@ -12,13 +13,11 @@ class RoomListItem extends Component {
     };
   }
 
-  //   onClick = ()
   render() {
-    console.log("RoomListItem render props", this.props);
     return (
       <List.Item
         header={this.props.name}
-        description="item count"
+        description={"item count: " + this.props.stuff.length}
         onClick={this.onClick}
       ></List.Item>
     );
@@ -26,18 +25,36 @@ class RoomListItem extends Component {
 }
 
 class RoomList extends Component {
+  static contextType = AuthContext;
+
   makeRoomItem = props => {};
 
-  onClick = () => {
-    console.log("icon clicked");
+  onClick = (event, data) => {
+    console.log("icon clicked", event, data);
+    console.log("onClick", this.context);
+    // add_room(this.context.state.current_user);
   };
 
   render() {
+    console.log("RoomList render props", this.props);
+    let roomListItems =
+      this.props.rooms.length > 0 ? (
+        this.props.rooms.map((room, index) => (
+          <RoomListItem
+            key={index}
+            name={room.name}
+            stuff={room.stuff}
+          ></RoomListItem>
+        ))
+      ) : (
+        <></>
+      );
     return (
       <List divided relaxed selection size="large">
-        <Grid padded>
+        <Grid celled padded>
           <Grid.Row>
             <Header>Your Rooms</Header>
+            <Input></Input>
             <Icon
               id="add_room_icon"
               link
@@ -47,8 +64,7 @@ class RoomList extends Component {
           </Grid.Row>
         </Grid>
 
-        <RoomListItem name="room1"></RoomListItem>
-        <RoomListItem name="room2"></RoomListItem>
+        {roomListItems}
       </List>
     );
   }

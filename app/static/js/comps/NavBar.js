@@ -11,6 +11,7 @@ class NavBar extends Component {
     console.log("NavBar render context", this.context);
     let rightMenu = null;
     if (this.context.state.isLoggedIn) {
+      console.log("NavBar render isLoggedIn");
       rightMenu = (
         <Menu.Menu position="right">
           <Menu.Item as={LogoutButton}></Menu.Item>
