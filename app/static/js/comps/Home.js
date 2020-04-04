@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import Greeter from "./Greeter";
-import RoomList from "./Room";
+import { RoomList, RoomDetail } from "./room";
 import { Grid, Divider } from "semantic-ui-react";
 import { AuthContext } from "../AuthProvider";
 import { get_users } from "../utils";
@@ -13,7 +13,7 @@ class HomePage extends Component {
   static contextType = AuthContext;
   constructor() {
     super();
-    this.state = { isLoggedIn: false, rooms: [] };
+    this.state = { isLoggedIn: false, rooms: [], current_room: null };
 
     console.log("HomePage constructor context", this.context);
   }
@@ -66,7 +66,9 @@ class HomePage extends Component {
             </Divider>
           </Grid.Column>
 
-          <Grid.Column width={6}>ROOM DETAIL</Grid.Column>
+          <Grid.Column width={6}>
+            <RoomDetail></RoomDetail>
+          </Grid.Column>
         </Grid.Row>
       </Grid>
     );
