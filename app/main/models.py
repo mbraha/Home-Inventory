@@ -1,4 +1,4 @@
-from flask import Flask, g, current_app
+from flask import Flask, g, current_app, json
 from marshmallow import Schema, fields, post_load, EXCLUDE
 from app.db import db
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -19,12 +19,20 @@ class User(object):
     def add_room(self, name, stuff=None):
         ''' A wrapper for Room's constructor
         '''
-        room_schema = RoomSchema(many=True)
-        room = Room(name, stuff)
+        room_schema = RoomSchema()
+        payload = {"name": name, "stuff": stuff}
+        room = None
+        try:
+            room = room_schema.load(payload)
+        except Exception as err:
+            print('load error', err)
+            return False
+
+        print(room)
         self.rooms.append(room)
 
         # Dump rooms for db to handle
-        rooms = room_schema.dump(self.rooms)
+        rooms = room_schema.dump(self.rooms, many=True)
         print('room added, adding to db', rooms)
         return db.update({'username': self.username},
                          {"$set": {
@@ -78,24 +86,27 @@ class Room(object):
     '''A Room has a name and may contain stuff.
     '''
     def __init__(self, name, stuff=None):
-        # stuff: A list of tuples: (item, price)
+        # stuff: A dict of items: {item: price}
+        print("Room init")
         self.name = name
         if stuff is None:
-            self.stuff = []
+            self.stuff = dict()
         else:
-            self.stuff = stuff
+            # Make sure stuff is well-formatted
+            if isinstance(stuff, dict):
+                self.stuff = stuff
 
-    # def __repr__(self):
-    #     return f'<Room {self.name} has {len(self.stuff)} stuff.>'
+    def __repr__(self):
+        return f'<Room {self.name} has {len(self.stuff)} stuff.>'
 
 
 class RoomSchema(Schema):
     name = fields.Str()
-    stuff = fields.List(fields.Tuple((fields.Str(), fields.Str())))
+    stuff = fields.Dict(keys=fields.Str(), values=fields.Str())
 
     @post_load
     def make_room(self, data, **kwargs):
-        # print('loading room into Class', data)
+        print('loading room into Class', data)
         return Room(**data)
 
 

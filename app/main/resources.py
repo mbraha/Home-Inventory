@@ -23,6 +23,7 @@ room_parser.add_argument('owner',
 room_parser.add_argument('room_name',
                          help='This field cannot be blank',
                          required=True)
+room_parser.add_argument('stuff')
 
 # For better serialization and stuff
 user_schema = UserSchema()
@@ -48,20 +49,28 @@ class AddRoom(Resource):
     # Add a room for a user
     # @jwt_required
     def post(self):
-        data = None
+        url_args = None
+        json_data = None
         try:
-            data = room_parser.parse_args()
+            url_args = room_parser.parse_args()
+            json_data = request.get_json()
         except Exception as err:
             print('AddRoom POST err', err)
 
-        print('AddRoom POST', data)
-        db_user = User.find_user(data['owner'])
+        print('AddRoom POST', url_args, json_data)
+        db_user = User.find_user(url_args['owner'])
         if not db_user:
-            return {'message': 'User {} doesn\'t exist'.format(data['owner'])}
+            return {
+                'message': 'User {} doesn\'t exist'.format(url_args['owner'])
+            }
         user = user_schema.load(db_user)
-        res = user.add_room(data['room_name'])
+        stuffs = json_data['stuff']
+        res = user.add_room(url_args['room_name'], stuffs)
 
-        return {'success': data['room_name'] + ' added!'}, 200
+        if res:
+            return {'success': url_args['room_name'] + ' added!'}, 200
+        else:
+            return {"error": "failed to add room"}, 500
 
 
 class Register(Resource):
