@@ -35,7 +35,7 @@ class MongoDB(object):
         return res
 
     def delete(self, selector, collection="users"):
-        return self.db[collection].delete_one(selector)
+        return self.db[collection].delete_one(selector).deleted_count
 
     def reset(self, collection="users"):
         self.db[collection].drop()

@@ -50,29 +50,15 @@ class User(object):
         '''
         # Get room from db
         selector = {"username": self.username, "rooms.name": _room}
-        projection = {"rooms": 1, "_id": 0}
-        db_rooms = db.find(selector, projection).get("rooms")
-        print("db_rooms", db_rooms, type(db_rooms))
-        curr_room = [room for room in db_rooms if room['name'] == _room][0]
-        for room in db_rooms:
-            print(room)
-        print("curr_room", curr_room)
-        room_obj = self.room_schema.load(curr_room)
-        print("room_obj", room_obj)
-        room_obj.add_stuff(stuff)
-        print('room_obj after add', room_obj)
 
-        res = self.room_schema.dump(room_obj)
-        print('dump res', res)
+        update_cmd = {"$set": {}}
+        for key, value in stuff.items():
+            update_cmd["$set"]["rooms.$[element]" + ".stuff." + key] = value
 
-        l = db.update(selector,
-                      {"$set": {
-                          "rooms.$[element]" + ".stuff": res['stuff']
-                      }},
-                      array_filters=[{
-                          "element.name": _room
-                      }])
-        print('add stuff result', l)
+        print("update cmd", update_cmd)
+        arr_filter = [{"element.name": _room}]
+
+        return db.update(selector, update_cmd, array_filters=arr_filter)
 
     @classmethod
     def find_user(cls, username):

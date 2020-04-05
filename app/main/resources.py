@@ -23,9 +23,7 @@ room_parser = reqparse.RequestParser()
 room_parser.add_argument('owner',
                          help='This field cannot be blank',
                          required=True)
-room_parser.add_argument('room_name',
-                         help='This field cannot be blank',
-                         required=True)
+room_parser.add_argument('room_name')
 room_parser.add_argument('stuff')
 
 # For better serialization and stuff
@@ -110,6 +108,32 @@ class Room(Resource):
         else:
             return {"error": "failed to add room"}, 500
 
+    def delete(self):
+        url_args = None
+        try:
+            url_args = room_parser.parse_args()
+        except Exception as err:
+            print('Room POST err', err)
+            return {'error': 'parse req err'}, 500
+
+        print('AddRoom POST', url_args)
+
+        room = url_args.get('room_name')
+        if room:
+            # only delete this room
+            db.update({"username": url_args.get('owner')},
+                      {"$pull": {
+                          "rooms": {
+                              "name": room
+                          }
+                      }})
+        else:
+            # delete all rooms
+            db.update({"username": url_args.get('owner')},
+                      {"$set": {
+                          "rooms": []
+                      }})
+
 
 class Stuff(Resource):
     def post(self):
@@ -129,15 +153,11 @@ class Stuff(Resource):
                 'error': 'User {} doesn\'t exist'.format(url_args['owner'])
             }, 500
         res = db_user.add_stuff_to_room(url_args['room_name'], json_data)
-        # User should already have room to add items to
-        #
-        # if res:
-        #     print('json_data', json_data)
-        #     current_stuff = res['rooms'][0]['stuff']
-        #     print('current_stuff', current_stuff)
-        #     current_stuff.update(json_data)
-        #     print('current_stuff after update', current_stuff)
-        # db.update(selector, {"$set": {"rooms.0.stuff": current_stuff}})
+
+        if res:
+            return {'success': 'Stuff added!'}, 200
+        else:
+            return {"error": "failed to add stuff"}, 500
 
 
 class Register(Resource):
