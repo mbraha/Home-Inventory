@@ -51,5 +51,6 @@ def create_app(config_class=Config):
     api.add_resource(resources.TestResource, '/test')
 
     api.add_resource(resources.AddRoom, '/add_room')
+    api.add_resource(resources.AddStuff, '/add_stuff')
 
     return app

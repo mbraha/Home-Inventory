@@ -13,16 +13,17 @@ class MongoDB(object):
 
         print('created DB instance')
 
-    def find_all(self, selector, collection):
+    def find_all(self, selector, collection="users"):
         return self.db[collection].find(selector)
 
-    def find(self, selector, collection):
-        return self.db[collection].find_one(selector)
+    def find(self, selector, projection=None, collection="users"):
+        print('looking for ', selector)
+        return self.db[collection].find_one(selector, projection=projection)
 
-    def create(self, document, collection):
+    def create(self, document, collection="users"):
         return self.db[collection].insert_one(document)
 
-    def update(self, selector, update, collection):
+    def update(self, selector, update, collection="users"):
         try:
             res = self.db[collection].update_one(selector, update)
             print('db update res', res)
@@ -31,10 +32,10 @@ class MongoDB(object):
 
         return res.matched_count
 
-    def delete(self, selector, collection):
+    def delete(self, selector, collection="users"):
         return self.db[collection].delete_one(selector).deleted_count
 
-    def reset(self, collection):
+    def reset(self, collection="users"):
         self.db[collection].drop()
 
 

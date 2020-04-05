@@ -73,6 +73,38 @@ class AddRoom(Resource):
             return {"error": "failed to add room"}, 500
 
 
+class AddStuff(Resource):
+    def post(self):
+        url_args = None
+        json_data = None
+        try:
+            url_args = room_parser.parse_args()
+            json_data = request.get_json()
+        except Exception as err:
+            print('AddStuff POST err', err)
+
+        print('AddStuff POST', url_args, json_data)
+        # User should already have room to add items to
+        selector = {
+            "username": url_args['owner'],
+            "rooms": {
+                "$elemMatch": {
+                    "name": url_args['room_name']
+                }
+            }
+        }
+        res = db.find(selector)
+        print("res", res, type(res))
+        if res:
+            stuff = json_data['stuff']
+            print('stuff', stuff)
+            current_stuff = res['rooms'][0]['stuff']
+            print('current_stuff', current_stuff)
+            current_stuff.update(stuff)
+            print('current_stuff after update', current_stuff)
+            db.update(selector, {"$set": {"rooms.0.stuff": current_stuff}})
+
+
 class Register(Resource):
     def post(self):
         data = None

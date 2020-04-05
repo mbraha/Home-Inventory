@@ -42,7 +42,7 @@ class User(object):
     @classmethod
     def find_user(cls, username):
         # print('looking for {}'.format(user.username))
-        usr = db.find({'username': username}, 'users')
+        usr = db.find({'username': username})
         # print('usr found:', usr)
         return usr
 
