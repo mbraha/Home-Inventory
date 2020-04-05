@@ -64,10 +64,8 @@ class Users(Resource):
             return {'error': 'parse req err'}, 500
 
         usr = url_args.get('username')
-        print('here', url_args)
         msg = None
         if usr:
-            print('here')
             try:
                 db.delete({"username": usr})
                 msg = {'success': 'deleted user ' + usr}, 200
@@ -119,20 +117,29 @@ class Room(Resource):
         print('AddRoom POST', url_args)
 
         room = url_args.get('room_name')
+        msg = None
         if room:
-            # only delete this room
-            db.update({"username": url_args.get('owner')},
-                      {"$pull": {
-                          "rooms": {
-                              "name": room
-                          }
-                      }})
+            try:
+                # only delete this room
+                db.update({"username": url_args.get('owner')},
+                          {"$pull": {
+                              "rooms": {
+                                  "name": room
+                              }
+                          }})
+                msg = {'success': 'deleted user ' + usr}, 200
+            except Exception as err:
+                msg = {'error': 'could not deletee room ' + room}, 500
+
         else:
             # delete all rooms
             db.update({"username": url_args.get('owner')},
                       {"$set": {
                           "rooms": []
                       }})
+            msg = {'message': 'deleted all rooms'}, 200
+
+        return msg
 
 
 class Stuff(Resource):
@@ -158,6 +165,9 @@ class Stuff(Resource):
             return {'success': 'Stuff added!'}, 200
         else:
             return {"error": "failed to add stuff"}, 500
+
+    def delete(self):
+        pass
 
 
 class Register(Resource):
