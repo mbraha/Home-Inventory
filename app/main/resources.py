@@ -45,7 +45,7 @@ class Users(Resource):
         usr = url_args.get('username')
         if usr:
             try:
-                user = db.find({'username': username})
+                user = db.find({'username': usr})
                 return user_schema.dump(user), 200
             except Exception as err:
                 print('Users GET find err', err)
@@ -144,45 +144,50 @@ class Stuff(Resource):
 
 class Register(Resource):
     def post(self):
-        data = None
+        url_args = None
         try:
-            data = auth_parser.parse_args()
+            url_args = auth_parser.parse_args()
         except Exception as err:
-            print('Register POST err', err)
+            print('Register POST parse req err', err)
+            return {'error': 'parse req err'}, 500
 
-        print('Register POST', data)
+        print('Register POST', url_args)
+        uname = url_args['username']
         # First, does the requested user account exist?
-        if not User.find_user(data['username']):
-            new_user = User(data['username'])
-            new_user.set_password(data['password'])
+        if not User.find_user(uname):
+            new_user = User(uname)
+            new_user.set_password(url_args['password'])
             db.create(user_schema.dump(new_user), 'users')
             # JWT stuff
-            access_token = create_access_token(identity=data['username'])
-            refresh_token = create_refresh_token(identity=data['username'])
-
+            access_token = create_access_token(identity=uname)
+            refresh_token = create_refresh_token(identity=uname)
+            return {
+                'success': uname + ' added!',
+                'access_token': access_token,
+                'refresh_token': refresh_token
+            }, 200
         else:
             return {'error': 'Username already exists'}, 500
 
-        return {
-            'success': data['username'] + ' added!',
-            'access_token': access_token,
-            'refresh_token': refresh_token
-        }, 200
 
-
-class UserLogin(Resource):
+class Login(Resource):
     def post(self):
-        data = auth_parser.parse_args()
-        db_user = User.find_user(data['username'])
+        url_args = None
+        try:
+            url_args = auth_parser.parse_args()
+        except Exception as err:
+            print('Login POST parse req err', err)
+            return {'error': 'parse req err'}, 500
+
+        uname = url_args['username']
+        db_user = User.find_user(uname)
         if not db_user:
-            return {
-                'message': 'User {} doesn\'t exist'.format(data['username'])
-            }
+            return {'message': 'User {} doesn\'t exist'.format(uname)}
         # same password?
         # print('****', user_schema.load(db_user))
-        if user_schema.load(db_user).check_password(data['password']):
-            access_token = create_access_token(identity=data['username'])
-            refresh_token = create_refresh_token(identity=data['username'])
+        if user_schema.load(db_user).check_password(url_args['password']):
+            access_token = create_access_token(identity=uname)
+            refresh_token = create_refresh_token(identity=uname)
             return {
                 'message': 'Login successful',
                 'access_token': access_token,
@@ -192,7 +197,7 @@ class UserLogin(Resource):
             return {"message": "Login unsuccessful"}
 
 
-class UserLogoutAccess(Resource):
+class LogoutAccess(Resource):
     @jwt_required
     def post(self):
         jti = get_raw_jwt()['jti']
@@ -207,7 +212,7 @@ class UserLogoutAccess(Resource):
             }, 500
 
 
-class UserLogoutRefresh(Resource):
+class LogoutRefresh(Resource):
     @jwt_refresh_token_required
     def post(self):
         jti = get_raw_jwt()['jti']

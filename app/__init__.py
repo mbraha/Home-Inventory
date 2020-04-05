@@ -44,9 +44,9 @@ def create_app(config_class=Config):
 
     api.add_resource(resources.Register, '/register')
     api.add_resource(resources.Users, '/users')
-    api.add_resource(resources.UserLogin, '/login')
-    api.add_resource(resources.UserLogoutAccess, '/logout/access')
-    api.add_resource(resources.UserLogoutRefresh, '/logout/refresh')
+    api.add_resource(resources.Login, '/login')
+    api.add_resource(resources.LogoutAccess, '/logout/access')
+    api.add_resource(resources.LogoutRefresh, '/logout/refresh')
     api.add_resource(resources.TokenRefresh, '/token/refresh')
     api.add_resource(resources.TestResource, '/test')
 
