@@ -16,6 +16,9 @@ auth_parser.add_argument('password',
                          help='This field cannot be blank',
                          required=True)
 
+user_parser = reqparse.RequestParser()
+user_parser.add_argument('username')
+
 room_parser = reqparse.RequestParser()
 room_parser.add_argument('owner',
                          help='This field cannot be blank',
@@ -29,23 +32,57 @@ room_parser.add_argument('stuff')
 user_schema = UserSchema()
 
 
-class AllUsers(Resource):
-    # Get all docs from users table and return a list of usernames
-    # TODO: Implement single user endpoint when scaling becomes an issue
-    # For now, client can request all users and filter return data.
+class Users(Resource):
     def get(self):
-        cur = db.find_all({}, 'users')
-        users = []
-        for doc in cur:
-            users.append(user_schema.dump(doc))
-        return users
+        url_args = None
+        try:
+            url_args = user_parser.parse_args()
+        except Exception as err:
+            print('Users GET parse req err', err)
+            return {'error': 'parse req err'}, 500
+
+        # Get all users or 1 user?
+        usr = url_args.get('username')
+        if usr:
+            try:
+                user = db.find({'username': username})
+                return user_schema.dump(user), 200
+            except Exception as err:
+                print('Users GET find err', err)
+                return {'error': 'could not find ' + usr}, 500
+        else:
+            cursor = db.find_all({}, 'users')
+            users = []
+            for doc in cursor:
+                users.append(user_schema.dump(doc))
+            return users, 200
 
     def delete(self):
-        User.delete()
-        return {'message': 'deleted all users'}
+        url_args = None
+        try:
+            url_args = user_parser.parse_args()
+        except Exception as err:
+            print('Users DEL parse req err', err)
+            return {'error': 'parse req err'}, 500
+
+        usr = url_args.get('username')
+        print('here', url_args)
+        msg = None
+        if usr:
+            print('here')
+            try:
+                db.delete({"username": usr})
+                msg = {'success': 'deleted user ' + usr}, 200
+            except Exception as err:
+                msg = {'error': 'could not deletee user' + usr}, 500
+        else:
+            db.reset()
+            msg = {'message': 'deleted all users'}, 200
+
+        return msg
 
 
-class AddRoom(Resource):
+class Room(Resource):
     # Add a room for a user
     # @jwt_required
     def post(self):
@@ -73,7 +110,7 @@ class AddRoom(Resource):
             return {"error": "failed to add room"}, 500
 
 
-class AddStuff(Resource):
+class Stuff(Resource):
     def post(self):
         url_args = None
         json_data = None

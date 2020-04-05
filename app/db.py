@@ -33,7 +33,7 @@ class MongoDB(object):
         return res.matched_count
 
     def delete(self, selector, collection="users"):
-        return self.db[collection].delete_one(selector).deleted_count
+        return self.db[collection].delete_one(selector)
 
     def reset(self, collection="users"):
         self.db[collection].drop()

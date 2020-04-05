@@ -46,15 +46,6 @@ class User(object):
         # print('usr found:', usr)
         return usr
 
-    @classmethod
-    def delete(cls, user=None):
-        '''Delete all records of user. If None, delete all users.
-        '''
-        if user:
-            db.delete({'username': user.username}, 'users')
-        else:
-            db.reset('users')
-
     def set_password(self, password):
         self.password = generate_password_hash(password)
 

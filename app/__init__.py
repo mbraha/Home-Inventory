@@ -43,14 +43,14 @@ def create_app(config_class=Config):
             db.client.close()
 
     api.add_resource(resources.Register, '/register')
-    api.add_resource(resources.AllUsers, '/users')
+    api.add_resource(resources.Users, '/users')
     api.add_resource(resources.UserLogin, '/login')
     api.add_resource(resources.UserLogoutAccess, '/logout/access')
     api.add_resource(resources.UserLogoutRefresh, '/logout/refresh')
     api.add_resource(resources.TokenRefresh, '/token/refresh')
     api.add_resource(resources.TestResource, '/test')
 
-    api.add_resource(resources.AddRoom, '/add_room')
-    api.add_resource(resources.AddStuff, '/add_stuff')
+    api.add_resource(resources.Room, '/room')
+    api.add_resource(resources.Stuff, '/stuff')
 
     return app
