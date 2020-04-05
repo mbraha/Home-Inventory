@@ -23,14 +23,16 @@ class MongoDB(object):
     def create(self, document, collection="users"):
         return self.db[collection].insert_one(document)
 
-    def update(self, selector, update, collection="users"):
+    def update(self, selector, update, array_filters=None, collection="users"):
+        res = None
         try:
-            res = self.db[collection].update_one(selector, update)
+            res = self.db[collection].find_one_and_update(
+                selector, update, array_filters=array_filters)
             print('db update res', res)
         except Exception as err:
             print('db update error', err)
 
-        return res.matched_count
+        return res
 
     def delete(self, selector, collection="users"):
         return self.db[collection].delete_one(selector)

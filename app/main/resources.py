@@ -83,26 +83,27 @@ class Users(Resource):
 
 
 class Room(Resource):
-    # Add a room for a user
+    # Add/delete a room that may/may not contain stuff
     # @jwt_required
     def post(self):
+        '''Adding a room
+        '''
         url_args = None
         json_data = None
         try:
             url_args = room_parser.parse_args()
-            json_data = request.get_json()
         except Exception as err:
-            print('AddRoom POST err', err)
+            print('Room POST err', err)
+            return {'error': 'parse req err'}, 500
 
+        json_data = request.get_json()
         print('AddRoom POST', url_args, json_data)
         db_user = User.find_user(url_args['owner'])
         if not db_user:
             return {
-                'message': 'User {} doesn\'t exist'.format(url_args['owner'])
-            }
-        user = user_schema.load(db_user)
-        stuffs = json_data['stuff']
-        res = user.add_room(url_args['room_name'], stuffs)
+                'error': 'User {} doesn\'t exist'.format(url_args['owner'])
+            }, 500
+        res = db_user.add_room(url_args['room_name'], json_data)
 
         if res:
             return {'success': url_args['room_name'] + ' added!'}, 200
@@ -119,27 +120,24 @@ class Stuff(Resource):
             json_data = request.get_json()
         except Exception as err:
             print('AddStuff POST err', err)
+            return {'error': 'parse req err'}, 500
 
         print('AddStuff POST', url_args, json_data)
+        db_user = User.find_user(url_args['owner'])
+        if not db_user:
+            return {
+                'error': 'User {} doesn\'t exist'.format(url_args['owner'])
+            }, 500
+        res = db_user.add_stuff_to_room(url_args['room_name'], json_data)
         # User should already have room to add items to
-        selector = {
-            "username": url_args['owner'],
-            "rooms": {
-                "$elemMatch": {
-                    "name": url_args['room_name']
-                }
-            }
-        }
-        res = db.find(selector)
-        print("res", res, type(res))
-        if res:
-            stuff = json_data['stuff']
-            print('stuff', stuff)
-            current_stuff = res['rooms'][0]['stuff']
-            print('current_stuff', current_stuff)
-            current_stuff.update(stuff)
-            print('current_stuff after update', current_stuff)
-            db.update(selector, {"$set": {"rooms.0.stuff": current_stuff}})
+        #
+        # if res:
+        #     print('json_data', json_data)
+        #     current_stuff = res['rooms'][0]['stuff']
+        #     print('current_stuff', current_stuff)
+        #     current_stuff.update(json_data)
+        #     print('current_stuff after update', current_stuff)
+        # db.update(selector, {"$set": {"rooms.0.stuff": current_stuff}})
 
 
 class Register(Resource):
@@ -185,7 +183,7 @@ class Login(Resource):
             return {'message': 'User {} doesn\'t exist'.format(uname)}
         # same password?
         # print('****', user_schema.load(db_user))
-        if user_schema.load(db_user).check_password(url_args['password']):
+        if db_user.check_password(url_args['password']):
             access_token = create_access_token(identity=uname)
             refresh_token = create_refresh_token(identity=uname)
             return {
