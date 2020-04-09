@@ -12,7 +12,7 @@
 
    Install it for your OS. [MongoDB Install Instructions](https://docs.mongodb.com/manual/installation/)
 
-   MongoDB must be run at the same MONGO_URI used in `config.py`.
+   MongoDB must be running at the same MONGO_URI used in `config.py` for the application to use the database.
 
 # Install
 
