@@ -1,10 +1,14 @@
 # Prerequisites
 
-1. Python 3
+1. \*Nix-like environment
+
+    The scripts below are shell scripts.
+
+2. Python 3
 
    To check, `python3 -V` in a terminal.
 
-2. MongoDB
+3. MongoDB
 
    Install it for your OS. [MongoDB Install Instructions](https://docs.mongodb.com/manual/installation/)
 
