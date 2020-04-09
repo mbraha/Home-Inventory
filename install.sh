@@ -3,6 +3,7 @@ set -e
 
 # Create python virtual environment and activate it.
 python3 -m venv ./venv || echo "failed to make venv"
+source ./venv/bin/activate
 echo "  Python virtual env created"
 
 # Install python dependencies.
