@@ -13,12 +13,15 @@
 # Install
 
 In the root of the project, run the install script:
+
 `./install.sh`
 
 # Usage
 
 To run the entire application:
+
 `./dev.sh`
 
 To stop:
+
 `./kill.sh`
