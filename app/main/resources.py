@@ -114,7 +114,7 @@ class Room(Resource):
             print('Room POST err', err)
             return {'error': 'parse req err'}, 500
 
-        print('AddRoom POST', url_args)
+        print('Room POST', url_args)
 
         room = url_args.get('room_name')
         msg = None
@@ -140,6 +140,53 @@ class Room(Resource):
             msg = {'message': 'deleted all rooms'}, 200
 
         return msg
+
+    def patch(self):
+        # Update room name
+        room_parser.add_argument('room_name_old',
+                                 help='This field cannot be blank',
+                                 required=True)
+        room_parser.add_argument('room_name_new',
+                                 help='This field cannot be blank',
+                                 required=True)
+        url_args = None
+        try:
+            url_args = room_parser.parse_args()
+        except Exception as err:
+            print('Room POST err', err)
+            return {'error': 'parse req err'}, 500
+
+        print('Room PATCH', url_args)
+
+        # Mongo does not support rename on embedded doc
+        # in array.
+        # Use $set
+        # Current room
+        curr_room_stuff = db.find({"username": url_args.get('owner')},
+                                  projection={
+                                      "_id": 1,
+                                      "rooms": {
+                                          "$elemMatch": {
+                                              "name":
+                                              url_args.get('room_name_old')
+                                          }
+                                      }
+                                  })["rooms"][0]
+        print("curr_room_stuff", curr_room_stuff)
+        curr_room_stuff['name'] = url_args.get('room_name_new')
+        print("curr_room_stuff after update", curr_room_stuff)
+        db.update(
+            {"username": url_args.get('owner')},
+            {"$pull": {
+                "rooms": {
+                    "name": url_args.get('room_name_old')
+                }
+            }})
+
+        db.update({'username': url_args.get('owner')},
+                  {"$push": {
+                      "rooms": curr_room_stuff
+                  }})
 
 
 class Stuff(Resource):
