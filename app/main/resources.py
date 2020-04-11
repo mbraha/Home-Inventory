@@ -22,9 +22,10 @@ user_parser.add_argument('username')
 room_parser = reqparse.RequestParser()
 room_parser.add_argument('owner',
                          help='This field cannot be blank',
-                         required=True)
-room_parser.add_argument('room_name')
-room_parser.add_argument('stuff')
+                         required=True,
+                         location='args')
+room_parser.add_argument('room_name', location='args')
+room_parser.add_argument('stuff', location='args')
 
 # For better serialization and stuff
 user_schema = UserSchema()
@@ -197,10 +198,10 @@ class Stuff(Resource):
             url_args = room_parser.parse_args()
             json_data = request.get_json()
         except Exception as err:
-            print('AddStuff POST err', err)
+            print('Stuff POST err', err)
             return {'error': 'parse req err'}, 500
 
-        print('AddStuff POST', url_args, json_data)
+        print('Stuff POST', url_args, json_data)
         db_user = User.find_user(url_args['owner'])
         if not db_user:
             return {
@@ -214,7 +215,35 @@ class Stuff(Resource):
             return {"error": "failed to add stuff"}, 500
 
     def delete(self):
-        pass
+        url_args = None
+        json_data = None
+        try:
+            url_args = room_parser.parse_args()
+            json_data = request.get_json()
+        except Exception as err:
+            print('Stuff delete err', err)
+            return {'error': 'parse req err'}, 500
+
+        if json_data:
+            # Array of item(s) to delete
+            update_cmd = {"$unset": dict()}
+            for item in json_data:
+                update_cmd["$unset"]["rooms.$[element].stuff." + item] = ""
+            print("del stuff update cmd", update_cmd)
+            db.update({"username": url_args.get('owner')},
+                      update_cmd,
+                      array_filters=[{
+                          "element.name": url_args.get("room_name")
+                      }])
+        else:
+            # Delete all stuff
+            db.update({"username": url_args.get('owner')},
+                      {"$set": {
+                          "rooms.$[element].stuff": {}
+                      }},
+                      array_filters=[{
+                          "element.name": url_args.get("room_name")
+                      }])
 
 
 class Register(Resource):
