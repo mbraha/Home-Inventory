@@ -245,6 +245,50 @@ class Stuff(Resource):
                           "element.name": url_args.get("room_name")
                       }])
 
+    def patch(self):
+        url_args = None
+        json_data = None
+        try:
+            url_args = room_parser.parse_args()
+            json_data = request.get_json()
+        except Exception as err:
+            print('Stuff PATCH err', err)
+            return {'error': 'parse req err'}, 500
+
+        # Get name changes, if any
+        # print("req_updates", json_data)
+        # name_updates = [for key in ]
+
+        # if req_updates.get("name"):
+        curr_stuff = db.find({"username": url_args.get("owner")},
+                             projection={
+                                 "_id": 0,
+                                 "rooms": {
+                                     "$elemMatch": {
+                                         "name": url_args.get('room_name')
+                                     }
+                                 }
+                             })['rooms'][0]["stuff"]
+        print("curr_stuff", curr_stuff)
+        for item in json_data:
+            for key, value in json_data[item].items():
+                print("key", key, value)
+                if key == "name":
+                    curr_stuff[value] = curr_stuff[item]
+                    del curr_stuff[item]
+                    item = value
+                if key == "value":
+                    curr_stuff[item] = value
+                print("inter curr_stuff", curr_stuff)
+        print("curr_stuff updated", curr_stuff)
+        db.update({"username": url_args.get('owner')},
+                  {"$set": {
+                      "rooms.$[element].stuff": curr_stuff
+                  }},
+                  array_filters=[{
+                      "element.name": url_args.get("room_name")
+                  }])
+
 
 class Register(Resource):
     def post(self):
