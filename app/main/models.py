@@ -5,18 +5,44 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 
 class User(object):
-    '''A User interacts with the site and CRUDs Rooms.
+    '''User represents the document in the DB and provides access
+    to CRUDing all fields.
     '''
     def __init__(self, username, password=None, rooms=None):
-        self.username = username
-        self.password = password
-        if rooms is None:
-            self.rooms = []
-        else:
-            self.rooms = rooms
+        self._username = username
+        self._password = password
+        self.rooms = rooms
         print("User __init__", self.rooms, type(self.rooms))
 
         self.room_schema = RoomSchema()
+
+    @property
+    def username(self):
+        return self._username
+
+    @username.setter
+    def username(self, new_name):
+        '''Update username in DB
+        '''
+        pass
+        # self.username = new_name
+
+    @username.deleter
+    def username(self):
+        '''Delete self from DB.
+        '''
+        pass
+
+    @property
+    def password(self):
+        return self._password
+
+    @password.setter
+    def password(self, new_password):
+        '''Update password in DB
+        '''
+        pass
+        # self.password = new_password
 
     def add_room(self, name, stuff=None):
         ''' A wrapper for Room's constructor
@@ -42,6 +68,11 @@ class User(object):
                          {"$push": {
                              "rooms": room
                          }})
+
+    def remove_room(self, room):
+        '''Delete room(s) from DB.
+        '''
+        pass
 
     def add_stuff_to_room(self, _room, stuff):
         ''' 
@@ -82,20 +113,40 @@ class User(object):
 
 
 class Room(object):
-    '''A Room has a name and may contain stuff.
+    '''A Room provides deeper DB access to CRUD rooms directly 
     '''
     def __init__(self, name, stuff=None):
         # stuff: A dict of items: {item: price}
-        self.name = name
-        if stuff is None:
-            self.stuff = dict()
-        else:
-            self.stuff = stuff
+        self._name = name
+        self.stuff = stuff
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self):
+        '''Update name of Room in DB.
+        '''
+        pass
 
     def add_stuff(self, stuff):
+        '''Add items to stuff in this room in DB.
+        '''
         print("add stuff in Room", stuff)
         for key, value in stuff.items():
             self.stuff[key] = value
+
+    def update_stuff(self, changes):
+        '''Update stuff for this room in DB.
+        @param changes: dict mapping old items to new.
+        '''
+        pass
+
+    def remove_stuff(self, items):
+        '''Remove items from stuff in this room in DB.
+        '''
+        pass
 
     def __repr__(self):
         return f'<Room {self.name} has {len(self.stuff)} stuff.>'

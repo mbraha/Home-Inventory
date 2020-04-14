@@ -302,7 +302,9 @@ class Register(Resource):
         print('Register POST', url_args)
         uname = url_args['username']
         # First, does the requested user account exist?
-        if not User.find_user(uname):
+        if User.find_user(uname):
+            return {'error': 'Username already exists'}, 500
+        else:
             new_user = User(uname)
             new_user.set_password(url_args['password'])
             db.create(user_schema.dump(new_user), 'users')
@@ -314,8 +316,6 @@ class Register(Resource):
                 'access_token': access_token,
                 'refresh_token': refresh_token
             }, 200
-        else:
-            return {'error': 'Username already exists'}, 500
 
 
 class Login(Resource):
