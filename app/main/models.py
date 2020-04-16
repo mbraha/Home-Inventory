@@ -4,34 +4,41 @@ from app.db import db
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
-class User(object):
+class UserDB(object):
     '''User represents the document in the DB and provides access
     to CRUDing all fields.
     '''
     def __init__(self, username, password=None, rooms=None):
         self._username = username
-        self._password = password
+        self.password = password
         self.rooms = rooms
         print("User __init__", self.rooms, type(self.rooms))
 
         self.room_schema = RoomSchema()
+        self.user_schema = UserSchema()
 
     @property
     def username(self):
+        # Return this User from db
         return self._username
+        # try:
+        #     return db.find({'username': self._username})
+        # except Exception as err:
+        #     print('Users GET find err', err)
+        #     return False
 
     @username.setter
     def username(self, new_name):
         '''Update username in DB
         '''
         pass
-        # self.username = new_name
+        # self._username = new_name
 
     @username.deleter
     def username(self):
         '''Delete self from DB.
         '''
-        pass
+        return db.delete({"username": self._username}) == 1
 
     @property
     def password(self):
@@ -45,11 +52,10 @@ class User(object):
         # self.password = new_password
 
     def add_room(self, name, stuff=None):
-        ''' A wrapper for Room's constructor
+        ''' A wrapper for RoomDB's constructor
         @param name: str
         @param stuff: dict
         '''
-
         room = None
         try:
             print("add room stuff", stuff)
@@ -64,15 +70,35 @@ class User(object):
         # Dump rooms for db to handle
         room = self.room_schema.dump(room)
         print('room added, adding to db', room)
-        return db.update({'username': self.username},
+        return db.update({'username': self._username},
                          {"$push": {
                              "rooms": room
                          }})
 
     def remove_room(self, room):
         '''Delete room(s) from DB.
+
+        @param room: name(s) of room to delete
         '''
-        pass
+        if isinstance(room, list):
+            # delete all rooms
+            db.update({"username": self._username}, {"$set": {"rooms": []}})
+        else:
+            try:
+                # only delete this room
+                # Because of $pull, all rooms with this name will be deleted.
+                # Client should take care of enforcing unique names.
+                db.update({"username": self._username},
+                          {"$pull": {
+                              "rooms": {
+                                  "name": room
+                              }
+                          }})
+            except Exception as err:
+                print('could not deletee room ' + room)
+                return False
+
+        return True
 
     def add_stuff_to_room(self, _room, stuff):
         ''' 
@@ -80,7 +106,7 @@ class User(object):
         @param stuff: dict
         '''
         # Get room from db
-        selector = {"username": self.username, "rooms.name": _room}
+        selector = {"username": self._username, "rooms.name": _room}
 
         update_cmd = {"$set": {}}
         for key, value in stuff.items():
@@ -109,11 +135,11 @@ class User(object):
         return check_password_hash(self.password, password)
 
     def __repr__(self):
-        return f'<User {self.username} {self.password}>'
+        return f'<UserDB {self._username}>'
 
 
-class Room(object):
-    '''A Room provides deeper DB access to CRUD rooms directly 
+class RoomDB(object):
+    '''A RoomDB provides deeper DB access to CRUD rooms directly 
     '''
     def __init__(self, name, stuff=None):
         # stuff: A dict of items: {item: price}
@@ -128,7 +154,36 @@ class Room(object):
     def name(self):
         '''Update name of Room in DB.
         '''
-        pass
+        # Mongo does not support rename on embedded doc
+        # in array.
+        # Use $set
+
+        # curr_room_stuff = db.find({"username": url_args.get('owner')},
+        #                           projection={
+        #                               "_id": 1,
+        #                               "rooms": {
+        #                                   "$elemMatch": {
+        #                                       "name":
+        #                                       url_args.get('room_name_old')
+        #                                   }
+        #                               }
+        #                           })["rooms"][0]
+        curr_room_stuff = self.stuff
+        print("curr_room_stuff", curr_room_stuff)
+        curr_room_stuff['name'] = url_args.get('room_name_new')
+        print("curr_room_stuff after update", curr_room_stuff)
+        db.update(
+            {"username": url_args.get('owner')},
+            {"$pull": {
+                "rooms": {
+                    "name": url_args.get('room_name_old')
+                }
+            }})
+
+        db.update({'username': url_args.get('owner')},
+                  {"$push": {
+                      "rooms": curr_room_stuff
+                  }})
 
     def add_stuff(self, stuff):
         '''Add items to stuff in this room in DB.
@@ -149,7 +204,7 @@ class Room(object):
         pass
 
     def __repr__(self):
-        return f'<Room {self.name} has {len(self.stuff)} stuff.>'
+        return f'<RoomDB {self.name} has {len(self.stuff)} stuff.>'
 
 
 class RoomSchema(Schema):
@@ -161,7 +216,7 @@ class RoomSchema(Schema):
     @post_load
     def make_room(self, data, **kwargs):
         print('loading room into Class', data)
-        return Room(**data)
+        return RoomDB(**data)
 
 
 class UserSchema(Schema):
@@ -172,7 +227,7 @@ class UserSchema(Schema):
     @post_load
     def make_user(self, data, **kwargs):
         # print('loading user into Class', data)
-        return User(**data)
+        return UserDB(**data)
 
     class Meta:
         unknown = EXCLUDE

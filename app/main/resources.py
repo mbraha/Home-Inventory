@@ -1,5 +1,5 @@
 from flask import render_template, jsonify, request
-from app.main.models import User, Room, BlacklistToken, UserSchema, RoomSchema
+from app.main.models import UserDB, RoomDB, BlacklistToken, UserSchema, RoomSchema
 from flask_restful import Resource, reqparse
 from app.db import db
 from pymongo.errors import DuplicateKeyError
@@ -7,6 +7,7 @@ from flask_jwt_extended import (create_access_token, create_refresh_token,
                                 jwt_required, jwt_refresh_token_required,
                                 get_jwt_identity, get_raw_jwt)
 
+# TODO: Could this all be in a custom RequestParser class?
 # Like argparse, but for requests to these Resources.
 auth_parser = reqparse.RequestParser()
 auth_parser.add_argument('username',
@@ -30,50 +31,65 @@ room_parser.add_argument('stuff', location='args')
 # For better serialization and stuff
 user_schema = UserSchema()
 
+PARSE_ERROR = -1
+PARSE_ERROR_MSG = {'error': 'parse req err'}, 500
+
+
+def fetch_user_args():
+    try:
+        return user_parser.parse_args()
+    except Exception as err:
+        print('Users GET parse req err', err)
+        return PARSE_ERROR
+
 
 class Users(Resource):
     def get(self):
-        url_args = None
-        try:
-            url_args = user_parser.parse_args()
-        except Exception as err:
-            print('Users GET parse req err', err)
-            return {'error': 'parse req err'}, 500
+        url_args = fetch_user_args()
+        if url_args == PARSE_ERROR:
+            return PARSE_ERROR_MSG
 
         # Get all users or 1 user?
-        usr = url_args.get('username')
-        if usr:
-            try:
-                user = db.find({'username': usr})
-                return user_schema.dump(user), 200
-            except Exception as err:
-                print('Users GET find err', err)
-                return {'error': 'could not find ' + usr}, 500
+        uname = url_args.get('username')
+        msg = None
+        if uname:
+            # Create User-DB interface, if they exist.
+            u = UserDB.find_user(uname)
+
+            print("u", u)
+
+            # Get from DB
+            if u.username:
+                return user_schema.dump(u), 200
+            else:
+                msg = {'error': 'could not find ' + u.username}, 500
         else:
-            cursor = db.find_all({}, 'users')
+            # Basically a full pull on the DB, so no interface.
+            # TODO: Add projection to hide things, like password hash
+            cursor = db.find_all({})
             users = []
             for doc in cursor:
                 users.append(user_schema.dump(doc))
-            return users, 200
+            msg = users, 200
+
+        return msg
 
     def delete(self):
-        url_args = None
-        try:
-            url_args = user_parser.parse_args()
-        except Exception as err:
-            print('Users DEL parse req err', err)
-            return {'error': 'parse req err'}, 500
+        url_args = fetch_user_args()
+        if url_args == PARSE_ERROR:
+            return PARSE_ERROR_MSG
 
-        usr = url_args.get('username')
+        uname = url_args.get('username')
         msg = None
-        if usr:
-            try:
-                db.delete({"username": usr})
-                msg = {'success': 'deleted user ' + usr}, 200
-            except Exception as err:
-                msg = {'error': 'could not deletee user' + usr}, 500
+        # Delete all users or this user?
+        # TODO: Control who can delete all users.
+        if uname:
+            # Create User-DB interface
+            u = UserDB(uname)
+            del u.username
+            msg = {'success': 'deleted user ' + usr}, 200
         else:
-            db.reset()
+            db.drop()
             msg = {'message': 'deleted all users'}, 200
 
         return msg
@@ -95,7 +111,7 @@ class Room(Resource):
 
         json_data = request.get_json()
         print('AddRoom POST', url_args, json_data)
-        db_user = User.find_user(url_args['owner'])
+        db_user = UserDB.find_user(url_args['owner'])
         if not db_user:
             return {
                 'error': 'User {} doesn\'t exist'.format(url_args['owner'])
@@ -202,7 +218,7 @@ class Stuff(Resource):
             return {'error': 'parse req err'}, 500
 
         print('Stuff POST', url_args, json_data)
-        db_user = User.find_user(url_args['owner'])
+        db_user = UserDB.find_user(url_args['owner'])
         if not db_user:
             return {
                 'error': 'User {} doesn\'t exist'.format(url_args['owner'])
@@ -302,10 +318,10 @@ class Register(Resource):
         print('Register POST', url_args)
         uname = url_args['username']
         # First, does the requested user account exist?
-        if User.find_user(uname):
+        if UserDB.find_user(uname):
             return {'error': 'Username already exists'}, 500
         else:
-            new_user = User(uname)
+            new_user = UserDB(uname)
             new_user.set_password(url_args['password'])
             db.create(user_schema.dump(new_user), 'users')
             # JWT stuff
@@ -328,7 +344,7 @@ class Login(Resource):
             return {'error': 'parse req err'}, 500
 
         uname = url_args['username']
-        db_user = User.find_user(uname)
+        db_user = UserDB.find_user(uname)
         if not db_user:
             return {'message': 'User {} doesn\'t exist'.format(uname)}
         # same password?

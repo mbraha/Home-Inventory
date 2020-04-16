@@ -1,6 +1,6 @@
 from app import create_app
 from app.db import db
-from app.main.models import User, Room
+from app.main.models import UserDB, RoomDB
 
 app = create_app()
 '''
@@ -15,4 +15,4 @@ these items for use.
 
 @app.shell_context_processor
 def make_shell_context():
-    return {'db': db, 'User': User, 'Room': Room}
+    return {'db': db, 'UserDB': UserDB, 'RoomDB': RoomDB}

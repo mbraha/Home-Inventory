@@ -13,8 +13,11 @@ class MongoDB(object):
 
         print('created DB instance')
 
-    def find_all(self, selector, collection="users"):
-        return self.db[collection].find(selector)
+    def find_all(self, selector, projection=None, collection="users"):
+        return self.db[collection].find(
+            selector,
+            projection=None,
+        )
 
     def find(self, selector, projection=None, collection="users"):
         print('looking for ', selector)
@@ -37,7 +40,7 @@ class MongoDB(object):
     def delete(self, selector, collection="users"):
         return self.db[collection].delete_one(selector).deleted_count
 
-    def reset(self, collection="users"):
+    def drop(self, collection="users"):
         self.db[collection].drop()
 
 
