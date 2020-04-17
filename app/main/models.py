@@ -8,9 +8,9 @@ class UserDB(object):
     '''User represents the document in the DB and provides access
     to CRUDing all fields.
     '''
-    def __init__(self, username, password=None, rooms=None):
+    def __init__(self, username, password=None, rooms=[]):
         self._username = username
-        self.password = password
+        self._password = password
         self.rooms = rooms
         print("User __init__", self.rooms, type(self.rooms))
 
@@ -34,8 +34,7 @@ class UserDB(object):
         pass
         # self._username = new_name
 
-    @username.deleter
-    def username(self):
+    def delete_user(self):
         '''Delete self from DB.
         '''
         return db.delete({"username": self._username}) == 1
@@ -46,10 +45,10 @@ class UserDB(object):
 
     @password.setter
     def password(self, new_password):
-        '''Update password in DB
+        '''Set/Update password in DB.
+        Use set_password() below to initial create the password
         '''
-        pass
-        # self.password = new_password
+        self._password = generate_password_hash(new_password)
 
     def add_room(self, name, stuff=None):
         ''' A wrapper for RoomDB's constructor
@@ -121,18 +120,15 @@ class UserDB(object):
     def find_user(cls, username):
         # print('looking for {}'.format(user.username))
         usr = db.find({'username': username})
-        # print('usr found:', usr)
+        print('usr found:', usr)
         if usr:
             return UserSchema().load(usr)
-        return usr
-
-    def set_password(self, password):
-        self.password = generate_password_hash(password)
+        return None
 
     def check_password(self, password):
         # print('checking {} to {} or {}'.format(
         #     self.password, password, generate_password_hash(password)))
-        return check_password_hash(self.password, password)
+        return check_password_hash(self._password, password)
 
     def __repr__(self):
         return f'<UserDB {self._username}>'
@@ -222,7 +218,7 @@ class RoomSchema(Schema):
 class UserSchema(Schema):
     username = fields.Str(required=True)
     password = fields.Str()
-    rooms = fields.List(fields.Nested(RoomSchema))
+    rooms = fields.List(fields.Nested(RoomSchema), allow_none=True)
 
     @post_load
     def make_user(self, data, **kwargs):

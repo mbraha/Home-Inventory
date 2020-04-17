@@ -43,26 +43,32 @@ def fetch_user_args():
         return PARSE_ERROR
 
 
+def fetch_auth_args():
+    try:
+        return auth_parser.parse_args()
+    except Exception as err:
+        print('Register POST parse req err', err)
+        return PARSE_ERROR
+
+
 class Users(Resource):
     def get(self):
         url_args = fetch_user_args()
         if url_args == PARSE_ERROR:
             return PARSE_ERROR_MSG
 
-        # Get all users or 1 user?
         uname = url_args.get('username')
         msg = None
+        # Get all users or 1 user?
         if uname:
             # Create User-DB interface, if they exist.
             u = UserDB.find_user(uname)
 
-            print("u", u)
-
             # Get from DB
-            if u.username:
+            if u and u.username:
                 return user_schema.dump(u), 200
             else:
-                msg = {'error': 'could not find ' + u.username}, 500
+                msg = {'error': 'could not find ' + u}, 500
         else:
             # Basically a full pull on the DB, so no interface.
             # TODO: Add projection to hide things, like password hash
@@ -86,8 +92,10 @@ class Users(Resource):
         if uname:
             # Create User-DB interface
             u = UserDB(uname)
-            del u.username
-            msg = {'success': 'deleted user ' + usr}, 200
+            if u.delete_user():
+                msg = {'success': 'deleted user ' + u.username}, 200
+            else:
+                msg = {'error': 'failed to delete user ' + u.username}, 500
         else:
             db.drop()
             msg = {'message': 'deleted all users'}, 200
@@ -308,57 +316,57 @@ class Stuff(Resource):
 
 class Register(Resource):
     def post(self):
-        url_args = None
-        try:
-            url_args = auth_parser.parse_args()
-        except Exception as err:
-            print('Register POST parse req err', err)
-            return {'error': 'parse req err'}, 500
+        url_args = fetch_auth_args()
+        if url_args == PARSE_ERROR:
+            return PARSE_ERROR_MSG
 
         print('Register POST', url_args)
         uname = url_args['username']
+        msg = None
         # First, does the requested user account exist?
-        if UserDB.find_user(uname):
-            return {'error': 'Username already exists'}, 500
+        u = UserDB.find_user(uname)
+        if u:
+            msg = {'error': 'Username already exists'}, 500
         else:
-            new_user = UserDB(uname)
-            new_user.set_password(url_args['password'])
-            db.create(user_schema.dump(new_user), 'users')
+            # Replace the empty var with a new User
+            u = UserDB(uname)
+            u.password = (url_args['password'])
+            db.create(user_schema.dump(u))
             # JWT stuff
             access_token = create_access_token(identity=uname)
             refresh_token = create_refresh_token(identity=uname)
-            return {
+            msg = {
                 'success': uname + ' added!',
                 'access_token': access_token,
                 'refresh_token': refresh_token
             }, 200
+        return msg
 
 
 class Login(Resource):
     def post(self):
-        url_args = None
-        try:
-            url_args = auth_parser.parse_args()
-        except Exception as err:
-            print('Login POST parse req err', err)
-            return {'error': 'parse req err'}, 500
+        url_args = fetch_auth_args()
+        if url_args == PARSE_ERROR:
+            return PARSE_ERROR_MSG
 
         uname = url_args['username']
-        db_user = UserDB.find_user(uname)
-        if not db_user:
-            return {'message': 'User {} doesn\'t exist'.format(uname)}
+        u = UserDB.find_user(uname)
+        msg = None
+        if not u:
+            msg = {'error': 'User {} doesn\'t exist'.format(uname)}
         # same password?
         # print('****', user_schema.load(db_user))
-        if db_user.check_password(url_args['password']):
+        if u.check_password(url_args['password']):
             access_token = create_access_token(identity=uname)
             refresh_token = create_refresh_token(identity=uname)
-            return {
-                'message': 'Login successful',
+            msg = {
+                'success': 'Login successful',
                 'access_token': access_token,
                 'refresh_token': refresh_token
             }
         else:
-            return {"message": "Login unsuccessful"}
+            msg = {"error": "Login unsuccessful"}
+        return msg
 
 
 class LogoutAccess(Resource):
