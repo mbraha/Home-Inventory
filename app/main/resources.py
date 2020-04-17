@@ -39,7 +39,7 @@ def fetch_user_args():
     try:
         return user_parser.parse_args()
     except Exception as err:
-        print('Users GET parse req err', err)
+        print('USERS parse req err', err)
         return PARSE_ERROR
 
 
@@ -47,8 +47,21 @@ def fetch_auth_args():
     try:
         return auth_parser.parse_args()
     except Exception as err:
-        print('Register POST parse req err', err)
+        print('AUTH parse req err', err)
         return PARSE_ERROR
+
+
+def fetch_room_args():
+    url_args = None
+    json_data = None
+    try:
+        url_args = room_parser.parse_args()
+        json_data = request.get_json()
+    except Exception as err:
+        print('ROOM parse req err', err)
+        return PARSE_ERROR
+
+    return url_args, json_data
 
 
 class Users(Resource):
@@ -109,60 +122,45 @@ class Room(Resource):
     def post(self):
         '''Adding a room
         '''
-        url_args = None
-        json_data = None
-        try:
-            url_args = room_parser.parse_args()
-        except Exception as err:
-            print('Room POST err', err)
-            return {'error': 'parse req err'}, 500
+        url_args, json_data = fetch_room_args()
+        if url_args == PARSE_ERROR:
+            return PARSE_ERROR_MSG
 
-        json_data = request.get_json()
-        print('AddRoom POST', url_args, json_data)
-        db_user = UserDB.find_user(url_args['owner'])
-        if not db_user:
-            return {
+        print('Room POST', url_args, json_data)
+        u = UserDB.find_user(url_args['owner'])
+        msg = None
+        if not u:
+            msg = {
                 'error': 'User {} doesn\'t exist'.format(url_args['owner'])
             }, 500
-        res = db_user.add_room(url_args['room_name'], json_data)
 
-        if res:
-            return {'success': url_args['room_name'] + ' added!'}, 200
+        if u.add_room(url_args['room_name'], json_data):
+            msg = {'success': url_args['room_name'] + ' added!'}, 200
         else:
-            return {"error": "failed to add room"}, 500
+            msg = {"error": "failed to add room"}, 500
+
+        return msg
 
     def delete(self):
-        url_args = None
-        try:
-            url_args = room_parser.parse_args()
-        except Exception as err:
-            print('Room POST err', err)
-            return {'error': 'parse req err'}, 500
+        url_args, json_data = fetch_room_args()
+        if url_args == PARSE_ERROR:
+            return PARSE_ERROR_MSG
 
         print('Room POST', url_args)
 
         room = url_args.get('room_name')
+        owner = url_args['owner']
         msg = None
-        if room:
-            try:
-                # only delete this room
-                db.update({"username": url_args.get('owner')},
-                          {"$pull": {
-                              "rooms": {
-                                  "name": room
-                              }
-                          }})
-                msg = {'success': 'deleted user ' + usr}, 200
-            except Exception as err:
-                msg = {'error': 'could not deletee room ' + room}, 500
-
+        u = UserDB.find_user(owner)
+        if not u:
+            msg = {'error': 'User {} doesn\'t exist'.format(owner)}, 500
+        if u.remove_room(room):
+            if room:
+                msg = {'success': 'deleted room ' + room}, 200
+            else:
+                msg = {'success': 'deleted all rooms'}, 200
         else:
-            # delete all rooms
-            db.update({"username": url_args.get('owner')},
-                      {"$set": {
-                          "rooms": []
-                      }})
-            msg = {'message': 'deleted all rooms'}, 200
+            msg = {'error': 'could not deletee room ' + room}, 500
 
         return msg
 
@@ -216,38 +214,38 @@ class Room(Resource):
 
 class Stuff(Resource):
     def post(self):
-        url_args = None
-        json_data = None
-        try:
-            url_args = room_parser.parse_args()
-            json_data = request.get_json()
-        except Exception as err:
-            print('Stuff POST err', err)
-            return {'error': 'parse req err'}, 500
+        url_args, json_data = fetch_room_args()
+        if url_args == PARSE_ERROR:
+            return PARSE_ERROR_MSG
 
         print('Stuff POST', url_args, json_data)
-        db_user = UserDB.find_user(url_args['owner'])
-        if not db_user:
+        u = UserDB.find_user(url_args['owner'])
+
+        if not u:
             return {
                 'error': 'User {} doesn\'t exist'.format(url_args['owner'])
             }, 500
-        res = db_user.add_stuff_to_room(url_args['room_name'], json_data)
 
-        if res:
-            return {'success': 'Stuff added!'}, 200
+        msg = None
+        if u.put_stuff_in_room(url_args['room_name'], json_data):
+            msg = {'success': 'Stuff added!'}, 200
         else:
-            return {"error": "failed to add stuff"}, 500
+            msg = {"error": "failed to add stuff"}, 500
+        return msg
 
     def delete(self):
-        url_args = None
-        json_data = None
-        try:
-            url_args = room_parser.parse_args()
-            json_data = request.get_json()
-        except Exception as err:
-            print('Stuff delete err', err)
-            return {'error': 'parse req err'}, 500
+        url_args, json_data = fetch_room_args()
+        if url_args == PARSE_ERROR:
+            return PARSE_ERROR_MSG
 
+        u = UserDB.find_user(url_args['owner'])
+        if not u:
+            return {
+                'error': 'User {} doesn\'t exist'.format(url_args['owner'])
+            }, 500
+
+        msg = None
+        u.remove_stuff()
         if json_data:
             # Array of item(s) to delete
             update_cmd = {"$unset": dict()}
@@ -269,49 +267,49 @@ class Stuff(Resource):
                           "element.name": url_args.get("room_name")
                       }])
 
-    def patch(self):
-        url_args = None
-        json_data = None
-        try:
-            url_args = room_parser.parse_args()
-            json_data = request.get_json()
-        except Exception as err:
-            print('Stuff PATCH err', err)
-            return {'error': 'parse req err'}, 500
+    # def patch(self):
+    #     url_args = None
+    #     json_data = None
+    #     try:
+    #         url_args = room_parser.parse_args()
+    #         json_data = request.get_json()
+    #     except Exception as err:
+    #         print('Stuff PATCH err', err)
+    #         return {'error': 'parse req err'}, 500
 
-        # Get name changes, if any
-        # print("req_updates", json_data)
-        # name_updates = [for key in ]
+    #     # Get name changes, if any
+    #     # print("req_updates", json_data)
+    #     # name_updates = [for key in ]
 
-        # if req_updates.get("name"):
-        curr_stuff = db.find({"username": url_args.get("owner")},
-                             projection={
-                                 "_id": 0,
-                                 "rooms": {
-                                     "$elemMatch": {
-                                         "name": url_args.get('room_name')
-                                     }
-                                 }
-                             })['rooms'][0]["stuff"]
-        print("curr_stuff", curr_stuff)
-        for item in json_data:
-            for key, value in json_data[item].items():
-                print("key", key, value)
-                if key == "name":
-                    curr_stuff[value] = curr_stuff[item]
-                    del curr_stuff[item]
-                    item = value
-                if key == "value":
-                    curr_stuff[item] = value
-                print("inter curr_stuff", curr_stuff)
-        print("curr_stuff updated", curr_stuff)
-        db.update({"username": url_args.get('owner')},
-                  {"$set": {
-                      "rooms.$[element].stuff": curr_stuff
-                  }},
-                  array_filters=[{
-                      "element.name": url_args.get("room_name")
-                  }])
+    #     # if req_updates.get("name"):
+    #     curr_stuff = db.find({"username": url_args.get("owner")},
+    #                          projection={
+    #                              "_id": 0,
+    #                              "rooms": {
+    #                                  "$elemMatch": {
+    #                                      "name": url_args.get('room_name')
+    #                                  }
+    #                              }
+    #                          })['rooms'][0]["stuff"]
+    #     print("curr_stuff", curr_stuff)
+    #     for item in json_data:
+    #         for key, value in json_data[item].items():
+    #             print("key", key, value)
+    #             if key == "name":
+    #                 curr_stuff[value] = curr_stuff[item]
+    #                 del curr_stuff[item]
+    #                 item = value
+    #             if key == "value":
+    #                 curr_stuff[item] = value
+    #             print("inter curr_stuff", curr_stuff)
+    #     print("curr_stuff updated", curr_stuff)
+    #     db.update({"username": url_args.get('owner')},
+    #               {"$set": {
+    #                   "rooms.$[element].stuff": curr_stuff
+    #               }},
+    #               array_filters=[{
+    #                   "element.name": url_args.get("room_name")
+    #               }])
 
 
 class Register(Resource):
