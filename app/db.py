@@ -26,33 +26,30 @@ class MongoDB(object):
     def create(self, document, collection="users"):
         return self.db[collection].insert_one(document)
 
+
     def update(self,
                selector,
                update,
                upsert=False,
                array_filters=None,
                collection="users"):
+        '''pymongo only offers update_one and update_many'''
         result = None
+        cmd = None
         if upsert:
             # ID if upserted, None otherwise
-            result = self.db[collection].update_one(
-                selector, update, upsert=upsert,
-                array_filters=array_filters).upserted_id
+            cmd = lambda: self.db[collection].update_one(
+                selector, update, upsert=upsert, array_filters=array_filters
+            ).upserted_id
         else:
             # 1 if modified, 0 otherwise
-            # result = self.db[collection].update_one(
-            #     selector, update, upsert=upsert,
-            #     array_filters=array_filters).modified_count
-            try:
-                result = self.db[collection].update_one(
-                    selector,
-                    update,
-                    upsert=upsert,
-                    array_filters=array_filters)
-                print("update result", result.matched_count,
-                      result.modified_count, result.raw_result)
-            except Exception as err:
-                print("update err", err)
+            cmd = lambda: self.db[collection].update_one(
+                selector, update, array_filters=array_filters)
+        try:
+            result = cmd()
+        except Exception as err:
+            print("update err", err)
+
         return result
 
     def delete(self, selector, collection="users"):

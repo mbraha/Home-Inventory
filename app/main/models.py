@@ -9,7 +9,7 @@ class UserDB(object):
     to CRUDing all fields.
     '''
     def __init__(self, username, password=None, rooms=[]):
-        self._username = username
+        self.username = username
         self._password = password
         self.rooms = rooms
 
@@ -22,29 +22,11 @@ class UserDB(object):
         print("User done __init__", self.rooms, type(self.rooms))
 
         self.room_schema = RoomSchema()
-        self.user_schema = UserSchema()
-
-    @property
-    def username(self):
-        # Return this User from db
-        return self._username
-        # try:
-        #     return db.find({'username': self._username})
-        # except Exception as err:
-        #     print('Users GET find err', err)
-        #     return False
-
-    @username.setter
-    def username(self, new_name):
-        '''Update username in DB
-        '''
-        pass
-        # self._username = new_name
 
     def delete_user(self):
         '''Delete self from DB.
         '''
-        return db.delete({"username": self._username}) == 1
+        return db.delete({"username": self.username}) == 1
 
     @property
     def password(self):
@@ -57,6 +39,16 @@ class UserDB(object):
         '''
         self._password = generate_password_hash(new_password)
 
+    # rooms are a list of app-specific objects, so we use don't user properties
+    # TODO: Yet?
+    def get_room(self, name):
+        '''Using a generator plus next to avoid creating the intermediate list
+        and avoid the ugly "[0]" call. 
+
+        We supply a default of None if the room is not found.
+        '''
+        return next((r for r in self.rooms if r.name == name), None)
+
     def add_room(self, name, stuff):
         ''' A wrapper for RoomDB's constructor
         @param name: str
@@ -65,14 +57,14 @@ class UserDB(object):
         room = None
         print("add room stuff", stuff)
         stuff = dict() if stuff is None else stuff
-        room = RoomDB(name, self._username, stuff)
+        room = RoomDB(name, self.username, stuff)
 
         print(room)
 
         # Dump rooms for db to handle
         room = self.room_schema.dump(room)
         print('room added, adding to db', room)
-        return db.update({'username': self._username},
+        return db.update({'username': self.username},
                          {"$push": {
                              "rooms": room
                          }})
@@ -82,38 +74,27 @@ class UserDB(object):
 
         @param room: name(s) of room to delete
         '''
+        res = None
         if room is None:
             # Delete all rooms
-            db.update({"username": self._username}, {"$set": {"rooms": []}})
-        elif isinstance(room, list):
-            # delete these rooms
-            pass
-            # db.update({"username": self._username}, {"$set": {"rooms": []}})
+            res = db.update({"username": self.username},
+                            {"$set": {
+                                "rooms": []
+                            }})
         else:
-            try:
-                # only delete this room
-                # Because of $pull, all rooms with this name will be deleted.
-                # Client should take care of enforcing unique names.
-                db.update({"username": self._username},
-                          {"$pull": {
-                              "rooms": {
-                                  "name": room
-                              }
-                          }})
-            except Exception as err:
-                print('could not deletee room ' + room)
-                return False
+            # Because of $pull, all rooms with this name will be deleted.
+            # Client should take care of enforcing unique names.
+            print("remove these rooms", room)
+            res = db.update({"username": self.username},
+                            {"$pull": {
+                                "rooms": {
+                                    "name": {
+                                        "$in": room
+                                    }
+                                }
+                            }})
 
-        return True
-
-    def put_stuff_in_room(self, _room, stuff):
-        ''' 
-        @param name: str
-        @param stuff: dict
-        '''
-        # Find room list item to put stuff in.
-        rm = [r for r in self.rooms if r.name == _room][0]
-        rm.update_stuff(stuff)
+        return res
 
     @classmethod
     def find_user(cls, username):
@@ -129,7 +110,7 @@ class UserDB(object):
         return check_password_hash(self._password, password)
 
     def __repr__(self):
-        return f'<UserDB {self._username}>'
+        return f'<UserDB {self.username}>'
 
 
 class RoomDB(object):
@@ -138,47 +119,31 @@ class RoomDB(object):
     def __init__(self, name, owner=None, stuff=dict()):
         # stuff: A dict of items: {item: price}
         # owner: not used in DB
-        self._name = name
-        self.owner = owner
+        self.name = name
         self.stuff = stuff
+        self.room_schema = RoomSchema()
 
-    @property
-    def name(self):
-        return self._name
+        # Not stored in DB because it's redundant right now.
+        self.owner = owner
 
-    @name.setter
-    def name(self):
-        '''Update name of Room in DB.
+    def change_name(self, new_name):
+        '''Update room name in DB.
+
+        Does not preserve item placement in DB's room array.
         '''
-        # Mongo does not support rename on embedded doc
-        # in array.
-        # Use $set
+        # Mongo does not support $rename on embedded doc in array.
+        # Instead, $pull the old room and $push the new one
+        db.update({"username": self.owner},
+                  {"$pull": {
+                      "rooms": {
+                          "name": self.name
+                      }
+                  }})
 
-        # curr_room_stuff = db.find({"username": url_args.get('owner')},
-        #                           projection={
-        #                               "_id": 1,
-        #                               "rooms": {
-        #                                   "$elemMatch": {
-        #                                       "name":
-        #                                       url_args.get('room_name_old')
-        #                                   }
-        #                               }
-        #                           })["rooms"][0]
-        curr_room_stuff = self.stuff
-        print("curr_room_stuff", curr_room_stuff)
-        curr_room_stuff['name'] = url_args.get('room_name_new')
-        print("curr_room_stuff after update", curr_room_stuff)
-        db.update(
-            {"username": url_args.get('owner')},
-            {"$pull": {
-                "rooms": {
-                    "name": url_args.get('room_name_old')
-                }
-            }})
-
-        db.update({'username': url_args.get('owner')},
+        self.name = new_name
+        db.update({'username': self.owner},
                   {"$push": {
-                      "rooms": curr_room_stuff
+                      "rooms": RoomSchema().dump(self)
                   }})
 
     def update_stuff(self, changes):
@@ -193,12 +158,12 @@ class RoomDB(object):
         }
         name or value may not be present
         '''
-        selector = {"username": self.owner, "rooms.name": self._name}
+        selector = {"username": self.owner, "rooms.name": self.name}
 
         # Build cmd based on requested changes
         set_cmd = {"$set": dict()}
         unset_cmd = {"$unset": dict()}
-        arr_filter = [{"element.name": self._name}]
+        arr_filter = [{"element.name": self.name}]
         print("current stuff: ", self.stuff)
 
         for key, change in changes.items():
@@ -244,20 +209,20 @@ class RoomDB(object):
             for item in items:
                 update_cmd["$unset"]["rooms.$[element].stuff." + item] = ""
             print("del stuff update cmd", update_cmd)
-            db.update({"username": self.owner},
-                      update_cmd,
-                      array_filters=[{
-                          "element.name": self._name
-                      }])
+            return db.update({"username": self.owner},
+                             update_cmd,
+                             array_filters=[{
+                                 "element.name": self.name
+                             }])
         else:
             # Delete all stuff
-            db.update({"username": self.owner},
-                      {"$set": {
-                          "rooms.$[element].stuff": {}
-                      }},
-                      array_filters=[{
-                          "element.name": self._name
-                      }])
+            return db.update({"username": self.owner},
+                             {"$set": {
+                                 "rooms.$[element].stuff": {}
+                             }},
+                             array_filters=[{
+                                 "element.name": self.name
+                             }])
 
     def __repr__(self):
         return f'<RoomDB {self.name} has {len(self.stuff)} stuff.>'

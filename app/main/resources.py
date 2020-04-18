@@ -7,32 +7,15 @@ from flask_jwt_extended import (create_access_token, create_refresh_token,
                                 jwt_required, jwt_refresh_token_required,
                                 get_jwt_identity, get_raw_jwt)
 
-# TODO: Could this all be in a custom RequestParser class?
-# Like argparse, but for requests to these Resources.
-auth_parser = reqparse.RequestParser()
-auth_parser.add_argument('username',
-                         help='This field cannot be blank',
-                         required=True)
-auth_parser.add_argument('password',
-                         help='This field cannot be blank',
-                         required=True)
-
-user_parser = reqparse.RequestParser()
-user_parser.add_argument('username')
-
-room_parser = reqparse.RequestParser()
-room_parser.add_argument('owner',
-                         help='This field cannot be blank',
-                         required=True,
-                         location='args')
-room_parser.add_argument('room_name', location='args')
-room_parser.add_argument('stuff', location='args')
-
 # For better serialization and stuff
 user_schema = UserSchema()
 
 PARSE_ERROR = -1
 PARSE_ERROR_MSG = {'error': 'parse req err'}, 500
+# TODO: Could this all be in a custom RequestParser class?
+
+user_parser = reqparse.RequestParser()
+user_parser.add_argument('username')
 
 
 def fetch_user_args():
@@ -43,6 +26,17 @@ def fetch_user_args():
         return PARSE_ERROR
 
 
+# TODO: Could this all be in a custom RequestParser class?
+# Like argparse, but for requests to these Resources.
+auth_parser = reqparse.RequestParser()
+auth_parser.add_argument('username',
+                         help='This field cannot be blank',
+                         required=True)
+auth_parser.add_argument('password',
+                         help='This field cannot be blank',
+                         required=True)
+
+
 def fetch_auth_args():
     try:
         return auth_parser.parse_args()
@@ -51,20 +45,44 @@ def fetch_auth_args():
         return PARSE_ERROR
 
 
+room_parser = reqparse.RequestParser()
+room_parser.add_argument('owner',
+                         help='This field cannot be blank',
+                         required=True,
+                         location='args')
+room_parser.add_argument('room_name', location='args')
+room_parser.add_argument('stuff', location='args')
+
+
 def fetch_room_args():
     url_args = None
     json_data = None
     try:
         url_args = room_parser.parse_args()
         json_data = request.get_json()
+        print('fetch_room_args got', url_args, json_data)
+        # room_name arg could be None or strings, that may to be be split
+        # into a list
+        if url_args['room_name']:
+            url_args['room_name'] = url_args['room_name'].split(",")
+            # Most callers don't want an array of 1 item
+            if len(url_args['room_name']) == 1:
+                url_args['room_name'] = url_args['room_name'][0]
     except Exception as err:
         print('ROOM parse req err', err)
-        return PARSE_ERROR
+        return (PARSE_ERROR, )
 
     return url_args, json_data
 
 
 class Users(Resource):
+    '''
+    GET
+        Read info for 1 or all Users.
+    
+    DELETE
+        Remove 1 or all Users.
+    '''
     def get(self):
         url_args = fetch_user_args()
         if url_args == PARSE_ERROR:
@@ -117,8 +135,19 @@ class Users(Resource):
 
 
 class Room(Resource):
-    # Add/delete a room that may/may not contain stuff
-    # @jwt_required
+    '''
+    All assume User exists and all actions are performed on 
+    this User.
+
+    POST
+        Add 1 new room, with or without stuff.
+    
+    DELETE
+        Remove 1, many, or all rooms.
+    
+    PATCH
+        Update 1 room name.
+    '''
     def post(self):
         '''Adding a room
         '''
@@ -126,14 +155,13 @@ class Room(Resource):
         if url_args == PARSE_ERROR:
             return PARSE_ERROR_MSG
 
-        print('Room POST', url_args, json_data)
         u = UserDB.find_user(url_args['owner'])
-        msg = None
         if not u:
-            msg = {
+            return {
                 'error': 'User {} doesn\'t exist'.format(url_args['owner'])
             }, 500
 
+        msg = None
         if u.add_room(url_args['room_name'], json_data):
             msg = {'success': url_args['room_name'] + ' added!'}, 200
         else:
@@ -146,21 +174,21 @@ class Room(Resource):
         if url_args == PARSE_ERROR:
             return PARSE_ERROR_MSG
 
-        print('Room POST', url_args)
-
-        room = url_args.get('room_name')
-        owner = url_args['owner']
-        msg = None
-        u = UserDB.find_user(owner)
+        u = UserDB.find_user(url_args['owner'])
         if not u:
-            msg = {'error': 'User {} doesn\'t exist'.format(owner)}, 500
-        if u.remove_room(room):
+            return {
+                'error': 'User {} doesn\'t exist'.format(url_args['owner'])
+            }, 500
+
+        msg = None
+        rooms = url_args['room_name']
+        if u.remove_room(rooms):
             if room:
-                msg = {'success': 'deleted room ' + room}, 200
+                msg = {'success': 'deleted room: ' + " ".join(rooms)}, 200
             else:
                 msg = {'success': 'deleted all rooms'}, 200
         else:
-            msg = {'error': 'could not deletee room ' + room}, 500
+            msg = {'error': 'could not deletee room ' + rooms}, 500
 
         return msg
 
@@ -168,54 +196,55 @@ class Room(Resource):
         # Update room name
         room_parser.add_argument('room_name_old',
                                  help='This field cannot be blank',
-                                 required=True)
+                                 required=True,
+                                 location='args')
         room_parser.add_argument('room_name_new',
                                  help='This field cannot be blank',
-                                 required=True)
-        url_args = None
-        try:
-            url_args = room_parser.parse_args()
-        except Exception as err:
-            print('Room POST err', err)
-            return {'error': 'parse req err'}, 500
+                                 required=True,
+                                 location='args')
+        url_args, json_data = fetch_room_args()
+        if url_args == PARSE_ERROR:
+            return PARSE_ERROR_MSG
 
-        print('Room PATCH', url_args)
+        old_name = url_args['room_name_old']
+        new_name = url_args['room_name_new']
+        u = UserDB.find_user(url_args['owner'])
+        if not u:
+            return {
+                'error': 'User {} doesn\'t exist'.format(url_args['owner'])
+            }, 500
 
-        # Mongo does not support rename on embedded doc
-        # in array.
-        # Use $set
-        # Current room
-        curr_room_stuff = db.find({"username": url_args.get('owner')},
-                                  projection={
-                                      "_id": 1,
-                                      "rooms": {
-                                          "$elemMatch": {
-                                              "name":
-                                              url_args.get('room_name_old')
-                                          }
-                                      }
-                                  })["rooms"][0]
-        print("curr_room_stuff", curr_room_stuff)
-        curr_room_stuff['name'] = url_args.get('room_name_new')
-        print("curr_room_stuff after update", curr_room_stuff)
-        db.update(
-            {"username": url_args.get('owner')},
-            {"$pull": {
-                "rooms": {
-                    "name": url_args.get('room_name_old')
-                }
-            }})
+        room = u.get_room(old_name)
+        if not room:
+            return {'error': 'Room {} doesn\'t exist'.format(old_name)}, 500
 
-        db.update({'username': url_args.get('owner')},
-                  {"$push": {
-                      "rooms": curr_room_stuff
-                  }})
+        msg = None
+        if room.change_name(new_name):
+            msg = {
+                f"success': 'Successfully change room name from {old_name} to {new_name}"
+            }, 500
+        else:
+            msg = {'error': 'Could not change room name'}, 500
 
 
 class Stuff(Resource):
+    '''
+    All assume Room exists and all actions are performed on 
+    this Room.
+
+    POST
+        Add/update items.
+
+        This endpoint handles:
+            Add: 1 or many items
+            Update: 1 or more names, 1 or more values, and
+                    1 or more name/value pairs.    
+    DELETE
+        Remove 1, many, or all items.
+    '''
     def post(self):
         url_args, json_data = fetch_room_args()
-        if url_args == PARSE_ERROR:
+        if url_args[0] == PARSE_ERROR:
             return PARSE_ERROR_MSG
 
         print('Stuff POST', url_args, json_data)
@@ -227,7 +256,10 @@ class Stuff(Resource):
             }, 500
 
         msg = None
-        if u.put_stuff_in_room(url_args['room_name'], json_data):
+        # Get the user's room we are modifying
+        # This only runs if the user already owns the room.
+        room = u.get_room(url_args['room_name'])
+        if room and room.update_stuff(json_data):
             msg = {'success': 'Stuff added!'}, 200
         else:
             msg = {"error": "failed to add stuff"}, 500
@@ -245,80 +277,35 @@ class Stuff(Resource):
             }, 500
 
         msg = None
-        u.remove_stuff()
-        if json_data:
-            # Array of item(s) to delete
-            update_cmd = {"$unset": dict()}
-            for item in json_data:
-                update_cmd["$unset"]["rooms.$[element].stuff." + item] = ""
-            print("del stuff update cmd", update_cmd)
-            db.update({"username": url_args.get('owner')},
-                      update_cmd,
-                      array_filters=[{
-                          "element.name": url_args.get("room_name")
-                      }])
+        # This only runs if the user already owns the room.
+        room = u.get_room(url_args['room_name'])
+        if room and room.remove_stuff(json_data):
+            msg = {'success': 'Stuff delete!'}, 200
         else:
-            # Delete all stuff
-            db.update({"username": url_args.get('owner')},
-                      {"$set": {
-                          "rooms.$[element].stuff": {}
-                      }},
-                      array_filters=[{
-                          "element.name": url_args.get("room_name")
-                      }])
-
-    # def patch(self):
-    #     url_args = None
-    #     json_data = None
-    #     try:
-    #         url_args = room_parser.parse_args()
-    #         json_data = request.get_json()
-    #     except Exception as err:
-    #         print('Stuff PATCH err', err)
-    #         return {'error': 'parse req err'}, 500
-
-    #     # Get name changes, if any
-    #     # print("req_updates", json_data)
-    #     # name_updates = [for key in ]
-
-    #     # if req_updates.get("name"):
-    #     curr_stuff = db.find({"username": url_args.get("owner")},
-    #                          projection={
-    #                              "_id": 0,
-    #                              "rooms": {
-    #                                  "$elemMatch": {
-    #                                      "name": url_args.get('room_name')
-    #                                  }
-    #                              }
-    #                          })['rooms'][0]["stuff"]
-    #     print("curr_stuff", curr_stuff)
-    #     for item in json_data:
-    #         for key, value in json_data[item].items():
-    #             print("key", key, value)
-    #             if key == "name":
-    #                 curr_stuff[value] = curr_stuff[item]
-    #                 del curr_stuff[item]
-    #                 item = value
-    #             if key == "value":
-    #                 curr_stuff[item] = value
-    #             print("inter curr_stuff", curr_stuff)
-    #     print("curr_stuff updated", curr_stuff)
-    #     db.update({"username": url_args.get('owner')},
-    #               {"$set": {
-    #                   "rooms.$[element].stuff": curr_stuff
-    #               }},
-    #               array_filters=[{
-    #                   "element.name": url_args.get("room_name")
-    #               }])
+            # return error
+            msg = {'error': 'Failed to remove {}'.format(json_data)}, 500
+        return msg
 
 
+'''
+*********************************************
+AUTH HANDLERS
+
+Uses JWT. Should switch to cookies eventually to support anon Users
+and other juicy features.
+*********************************************
+'''
+
+
+# TODO: Could these be combined?
+# POST: Register/Login based on URL arg
+# DELETE: Logout, token based on args.
 class Register(Resource):
     def post(self):
         url_args = fetch_auth_args()
         if url_args == PARSE_ERROR:
             return PARSE_ERROR_MSG
 
-        print('Register POST', url_args)
         uname = url_args['username']
         msg = None
         # First, does the requested user account exist?
