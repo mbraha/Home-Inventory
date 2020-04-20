@@ -293,6 +293,11 @@ AUTH HANDLERS
 
 Uses JWT. Should switch to cookies eventually to support anon Users
 and other juicy features.
+
+Flask-jwt-extended defaults these error codes. There are 
+decorators available to override this behavior.
+
+    401: token expired
 *********************************************
 '''
 

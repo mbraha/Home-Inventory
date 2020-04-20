@@ -4,30 +4,38 @@ import { get_new_access_token } from "./utils";
 const AuthContext = React.createContext();
 
 class AuthProvider extends Component {
+  /* 
+  Handle user authentication. Use JWT refresh and access tokens.
+  This state is available to the entire app.
+  */
   constructor() {
     super();
     console.log("AuthProvider constructor");
     const refresh_token = localStorage.getItem("refresh_token");
-    const current_user = localStorage.getItem("current_user");
-    console.log("got token from storage", refresh_token);
+    const current_user = localStorage.getItem("current_user") || "";
+    // console.log("got token from storage", refresh_token);
     this.state = {
       current_user: current_user,
       isLoggedIn: false,
       access_token: null,
       refresh_token: refresh_token,
-      timer_id: null
+      timer_id: null,
     };
   }
 
   async componentDidMount() {
     console.log("AuthProvider componentDidMount");
     let { refresh_token } = this.state;
+
+    // Take action if returning user.
     if (refresh_token) {
       // Try and get a new access token
       const new_access_token_result = await get_new_access_token(
         this.state.refresh_token
       );
-      console.log("AuthProvider didMount new_token", new_access_token_result);
+      // console.log("AuthProvider didMount new_token", new_access_token_result);
+
+      // Set auth status based on result.
       let loginStatus = false;
       let access_token = null;
       let timer_id = null;
@@ -41,13 +49,15 @@ class AuthProvider extends Component {
       } else if (new_access_token_result == 401) {
         // Refresh token revoked
         refresh_token = null;
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("current_user");
       }
 
       this.setState({
         timer_id: timer_id,
         isLoggedIn: loginStatus,
         refresh_token: refresh_token,
-        access_token: access_token
+        access_token: access_token,
       });
     }
   }
@@ -56,12 +66,13 @@ class AuthProvider extends Component {
     console.log("silentRefresh");
     const { refresh_token } = this.state;
     const new_access_token = await get_new_access_token(refresh_token);
-    console.log("App silent_refresh new_access_token", new_access_token);
+    // console.log("App silent_refresh new_access_token", new_access_token);
     if (new_access_token && new_access_token.hasOwnProperty("access_token")) {
       this.setState({ isLoggedIn: true, access_token: new_access_token });
     }
   }
 
+  // So children can update auth status.
   setLoggedInStatus = (status, username) => {
     console.log("setting log in status");
     if (status.hasOwnProperty("error")) {
@@ -69,7 +80,12 @@ class AuthProvider extends Component {
       this.setState({ isLoggedIn: false });
     } else if (status.hasOwnProperty("revoked")) {
       localStorage.removeItem("refresh_token");
-      this.setState({ isLoggedIn: false });
+      localStorage.removeItem("current_user");
+      this.setState({
+        isLoggedIn: false,
+        refresh_token: null,
+        current_user: "",
+      });
     } else {
       // console.log("status", status);
       localStorage.setItem("refresh_token", status.refresh_token);
@@ -78,7 +94,7 @@ class AuthProvider extends Component {
         isLoggedIn: true,
         access_token: status.access_token,
         refresh_token: status.refresh_token,
-        current_user: username
+        current_user: username,
       });
     }
   };

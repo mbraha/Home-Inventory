@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import { Button, Form } from "semantic-ui-react";
 import { Redirect } from "react-router-dom";
-import { AuthContext } from "../AuthProvider";
+import { AuthContext } from "../../AuthProvider";
 
 class AuthForm extends Component {
   static contextType = AuthContext;
@@ -16,9 +16,9 @@ class AuthForm extends Component {
   handleChange = (e, { name, value }) => this.setState({ [name]: value });
 
   handleSubmit = async () => {
-    console.log("handleSubmit context", this.context);
+    // console.log("handleSubmit context", this.context);
     const { setLoggedInStatus } = this.context;
-    console.log("handleSubmit setLoggedInStatus", setLoggedInStatus);
+    // console.log("handleSubmit setLoggedInStatus", setLoggedInStatus);
     const { username, password } = this.state;
     const query = "username=" + username + "&password=" + password;
     // console.log("handleSubmit query", query);
@@ -26,21 +26,21 @@ class AuthForm extends Component {
       "http://127.0.0.1:5000/" + this.endpoint + "?" + query,
       {
         method: "POST",
-        body: { username: username, password: password }
+        body: { username: username, password: password },
       }
     );
     const status = await response.json();
-    console.log("response", status, status.status);
+    // console.log("response", status, status.status);
 
     this.setState({ username: "", password: "" });
     setLoggedInStatus(status, username);
   };
 
   render() {
-    console.log("Auth render context", this.context);
+    // console.log("Auth render context", this.context);
     const { username, password } = this.state;
     if (this.context.state.isLoggedIn) {
-      console.log("redirecting away from register");
+      // console.log("redirecting away from register");
       return <Redirect to="/" />;
     }
     return (

@@ -1,4 +1,4 @@
-import AuthForm from "./Auth";
+import AuthForm from "./AuthForm";
 
 class LoginForm extends AuthForm {
   constructor(props) {

@@ -13,14 +13,15 @@ class HomePage extends Component {
   static contextType = AuthContext;
   constructor() {
     super();
-    this.state = { isLoggedIn: false, rooms: [], current_room: null };
+    this.state = { rooms: [], current_room: null };
 
     console.log("HomePage constructor context", this.context);
   }
 
-  componentDidMount() {
+  async componentDidMount() {
     // Good place to get user room info once they log in
     console.log("HomePage componentDidMount context", this.context);
+    let temp = await get_users();
     // if (this.context.state.isLoggedIn) {
     //   // let temp = get_users();
     //   console.log("HomePage componentDidMount isLoggedIn");
@@ -32,11 +33,13 @@ class HomePage extends Component {
     if (this.context.state.isLoggedIn != this.state.isLoggedIn) {
       console.log("HomePage componentDidUpdate isLoggedIn changed");
       let temp = await get_users();
-      let user = temp.find(u => u.username == this.context.state.current_user);
+      let user = temp.find(
+        (u) => u.username == this.context.state.current_user
+      );
       console.log("HomePage componentDidUpdate get_users user", user);
       this.setState({
         rooms: user.rooms,
-        isLoggedIn: this.context.state.isLoggedIn
+        isLoggedIn: this.context.state.isLoggedIn,
       });
     }
   }

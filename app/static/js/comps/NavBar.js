@@ -1,17 +1,17 @@
 import React, { Component } from "react";
 import { Menu } from "semantic-ui-react";
 import { Link } from "react-router-dom";
-import LogoutButton from "./Logout";
+import LogoutButton from "./auth/Logout";
 import { AuthContext } from "../AuthProvider";
 
 class NavBar extends Component {
   static contextType = AuthContext;
 
   render() {
-    console.log("NavBar render context", this.context);
+    // console.log("NavBar render context", this.context);
     let rightMenu = null;
     if (this.context.state.isLoggedIn) {
-      console.log("NavBar render isLoggedIn");
+      // console.log("NavBar render isLoggedIn");
       rightMenu = (
         <Menu.Menu position="right">
           <Menu.Item as={LogoutButton}></Menu.Item>
