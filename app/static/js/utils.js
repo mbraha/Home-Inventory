@@ -11,9 +11,10 @@ async function perform_fetch({
   /*
   Custom Wrapper for fetch() to interact with our API.
 
-  Return result object on success, null if fetch failed, HTTP error code otherwise.
+  Return result object on success, HTTP error code otherwise.
   */
   try {
+    console.log(`fetching: /${endpoint}?${query}  ${method}`);
     const response = await fetch(
       "http://127.0.0.1:5000/" + endpoint + "?" + query,
       {
@@ -30,42 +31,29 @@ async function perform_fetch({
       return response.status;
     }
   } catch (error) {
-    console.log(`fetch error: ${method} ${endpoint}`, error);
-    return null;
+    // Something wrong in the fetch call.
+    console.log(`fetch fail: ${method} ${endpoint}`, error);
+    return 400;
   }
 }
 
 export async function get_new_access_token(token) {
   const header = new Headers({ Authorization: "Bearer " + token });
-  return await perform_fetch({
+  const res = await perform_fetch({
     endpoint: "token/refresh",
     headers: header,
   });
-  // try {
-  //   const response = await fetch("http://127.0.0.1:5000/token/refresh", {
-  //     method: "POST",
-  //     headers: new Headers({ Authorization: "Bearer " + token }),
-  //   });
-  //   console.log("get_new_access_token response", response);
-  //   if (response.status == 200) {
-  //     const result = await response.json();
-  //     return result;
-  //   } else {
-  //     return response.status;
-  //   }
-  // } catch (error) {
-  //   console.log("get_new_access_token error", error);
-  // }
+  return res;
 }
 
 export async function full_logout(access_token, refresh_token) {
   const acc_header = new Headers({ Authorization: "Bearer " + access_token });
   const ref_header = new Headers({ Authorization: "Bearer " + refresh_token });
-  const acc_response = perform_fetch({
+  const acc_response = await perform_fetch({
     endpoint: "logout/access",
     headers: acc_header,
   });
-  const ref_response = perform_fetch({
+  const ref_response = await perform_fetch({
     endpoint: "logout/refresh",
     headers: ref_header,
   });
@@ -95,26 +83,16 @@ export async function full_logout(access_token, refresh_token) {
   // }
 }
 
-export async function get_users() {
-  return await perform_fetch({ endpoint: "users", method: "GET" });
+export async function get_user(username) {
+  // Return all info for this user.
+  return await perform_fetch({
+    endpoint: "users",
+    method: "GET",
+    query: "username=" + username,
+  });
 }
 
 export async function add_room(owner, room_name) {
-  const query = "owner=" + owner + "room_name=" + room_name;
+  const query = "owner=" + owner + "&" + "room_name=" + room_name;
   return await perform_fetch({ endpoint: "room", query: query });
-  // try {
-  //   const query = "owner=" + owner + "room_name=" + room_name;
-  //   const response = await fetch("http://127.0.0.1:5000/add_room?" + query, {
-  //     method: "POST",
-  //   });
-  //   if (response.status == 200) {
-  //     const result = await response.json();
-  //     return result;
-  //   } else {
-  //     return response.status;
-  //   }
-  // } catch (error) {
-  //   console.log("add_room failure", error);
-  //   return null;
-  // }
 }

@@ -17,7 +17,7 @@ class Greeter extends Component {
     return text;
   }
   render() {
-    console.log("Greeter render context", this.context);
+    // console.log("Greeter render context", this.context);
     return (
       <Container>
         <h1>home!</h1>

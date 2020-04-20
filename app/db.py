@@ -26,7 +26,6 @@ class MongoDB(object):
     def create(self, document, collection="users"):
         return self.db[collection].insert_one(document)
 
-
     def update(self,
                selector,
                update,
@@ -56,6 +55,7 @@ class MongoDB(object):
         return self.db[collection].delete_one(selector).deleted_count
 
     def drop(self, collection="users"):
+        self.db["users"].drop()
         self.db[collection].drop()
 
 

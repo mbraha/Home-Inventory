@@ -1,14 +1,16 @@
 import React, { Component } from "react";
 import Greeter from "./Greeter";
-import { RoomList, RoomDetail } from "./room";
+import { RoomView, AddRoomDetail } from "./room";
 import { Grid, Divider } from "semantic-ui-react";
 import { AuthContext } from "../AuthProvider";
-import { get_users } from "../utils";
+import { get_user } from "../utils";
 
 class HomePage extends Component {
   /*
   Home page is responsible for main UX. It knows the user and 
   their rooms.
+
+  RoomView dictates what RoomDetail should show.
   */
   static contextType = AuthContext;
   constructor() {
@@ -19,33 +21,57 @@ class HomePage extends Component {
   }
 
   async componentDidMount() {
-    // Good place to get user room info once they log in
+    // Once we know the user name, obtain their info from DB.
     console.log("HomePage componentDidMount context", this.context);
-    let temp = await get_users();
-    // if (this.context.state.isLoggedIn) {
-    //   // let temp = get_users();
-    //   console.log("HomePage componentDidMount isLoggedIn");
-    // }
-  }
-
-  async componentDidUpdate() {
-    console.log("HomePage componentDidUpdate", this.context);
-    if (this.context.state.isLoggedIn != this.state.isLoggedIn) {
-      console.log("HomePage componentDidUpdate isLoggedIn changed");
-      let temp = await get_users();
-      let user = temp.find(
-        (u) => u.username == this.context.state.current_user
-      );
-      console.log("HomePage componentDidUpdate get_users user", user);
-      this.setState({
-        rooms: user.rooms,
-        isLoggedIn: this.context.state.isLoggedIn,
-      });
+    const { current_user } = this.context.state;
+    if (current_user) {
+      let u = await get_user(current_user);
+      console.log("HomePage componentDidMount u", u);
+      if (typeof u === "number") {
+        console.log("HomePage componentDidMount error finding user.", u);
+        this.context.setLoggedInStatus({ revoked: true });
+      } else {
+        console.log("HomePage componentDidMount user", u);
+        // Load rooms into state
+        if (u.rooms.length > 0) {
+          this.setState({ rooms: u.rooms });
+        }
+      }
     }
   }
 
+  setCurrentRoom = (new_room_name, stuff = {}) => {
+    // If this is a new room, add to list.
+    if (!this.state.rooms.find((room) => room.name == new_room_name)) {
+      // A newly added room, which might have had stuff. Load into state
+      this.setState((prevState) => ({
+        rooms: [...prevState.rooms, { name: new_room_name, stuff: stuff }],
+        current_room: new_room_name,
+      }));
+    } else {
+      this.setState({ current_room: new_room_name });
+    }
+  };
+
   render() {
     console.log("Homepage render context", this.context);
+    console.log("Homepage render state", this.state);
+
+    const { current_room } = this.state;
+
+    let detailView;
+    if (current_room === null) {
+      // Don't show anything.
+      detailView = <></>;
+    } else if (current_room == "add_room") {
+      // Show Add Room detail comp.
+      detailView = (
+        <AddRoomDetail setCurrentRoom={this.setCurrentRoom}></AddRoomDetail>
+      );
+    }
+    detailView = (
+      <AddRoomDetail setCurrentRoom={this.setCurrentRoom}></AddRoomDetail>
+    );
     return (
       <Grid celled>
         <Grid.Row>
@@ -59,7 +85,10 @@ class HomePage extends Component {
         <Grid.Row columns={3}>
           <Grid.Column width={4}>
             <Grid.Row>
-              <RoomList rooms={this.state.rooms}></RoomList>
+              <RoomView
+                rooms={this.state.rooms}
+                setCurrentRoom={this.setCurrentRoom}
+              ></RoomView>
             </Grid.Row>
           </Grid.Column>
 
@@ -69,9 +98,7 @@ class HomePage extends Component {
             </Divider>
           </Grid.Column>
 
-          <Grid.Column width={6}>
-            <RoomDetail></RoomDetail>
-          </Grid.Column>
+          <Grid.Column width={6}>{detailView}</Grid.Column>
         </Grid.Row>
       </Grid>
     );

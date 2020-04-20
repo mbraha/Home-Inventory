@@ -99,7 +99,7 @@ class Users(Resource):
             if u and u.username:
                 return user_schema.dump(u), 200
             else:
-                msg = {'error': 'could not find ' + u}, 500
+                msg = {'error': 'could not find ' + str(u)}, 404
         else:
             # Basically a full pull on the DB, so no interface.
             # TODO: Add projection to hide things, like password hash

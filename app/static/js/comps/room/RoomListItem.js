@@ -7,7 +7,7 @@ import {
   Grid,
   Modal,
   Form,
-  Button
+  Button,
 } from "semantic-ui-react";
 import { add_room } from "../../utils";
 import { AuthContext } from "../../AuthProvider";
@@ -18,7 +18,7 @@ class RoomListItem extends Component {
 
     this.state = {
       name: "",
-      items: []
+      items: [],
     };
   }
 
@@ -26,7 +26,7 @@ class RoomListItem extends Component {
     return (
       <List.Item
         header={this.props.name}
-        description={"item count: " + this.props.stuff.length}
+        description={"item count: " + Object.keys(this.props.stuff).length}
         onClick={this.onClick}
       ></List.Item>
     );

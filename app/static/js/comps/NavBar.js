@@ -34,7 +34,6 @@ class NavBar extends Component {
         <Menu.Item header as={Link} to="/">
           Home-Inventory
         </Menu.Item>
-        <Menu.Item>Rooms</Menu.Item>
         {rightMenu}
       </Menu>
     );
