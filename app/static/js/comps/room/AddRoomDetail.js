@@ -32,6 +32,10 @@ class AddRoomDetail extends Component {
     }
   };
 
+  onClickCancel = () => {
+    this.props.setCurrentRoom();
+  };
+
   render() {
     const { new_room } = this.state;
     return (
@@ -43,6 +47,9 @@ class AddRoomDetail extends Component {
             value={new_room}
           ></Form.Input>
           <Form.Button positive>Create</Form.Button>
+          <Form.Button onClick={this.onClickCancel} negative>
+            Cancel
+          </Form.Button>
         </Form.Group>
       </Form>
     );

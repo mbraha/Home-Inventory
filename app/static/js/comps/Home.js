@@ -10,12 +10,22 @@ class HomePage extends Component {
   Home page is responsible for main UX. It knows the user and 
   their rooms.
 
-  RoomView dictates what RoomDetail should show.
+  RoomView
+    Holds the list of rooms. When a room is clicked, it
+    is shown in RoomDetail.
+
+  RoomDetail
+    Shows a detailed view of the room aka stuff.
+
+    This space is also reserved for the form to create new rooms.
   */
   static contextType = AuthContext;
   constructor() {
     super();
-    this.state = { rooms: [], current_room: null };
+    // TODO: Previous room is used in case the RoomDetail view is
+    // the Add Room form, but user cancels. We should see the previous room.
+    // It should be a stack if we need more than 3 rooms to remember.
+    this.state = { rooms: [], current_room: null, previous_room: null };
 
     console.log("HomePage constructor context", this.context);
   }
@@ -47,21 +57,22 @@ class HomePage extends Component {
     }));
   };
 
-  setCurrentRoom = (new_room_name, stuff = {}) => {
+  setCurrentRoom = (new_room_name = null, stuff = {}) => {
     if (new_room_name == "add_room") {
-      this.setState({ current_room: new_room_name });
-    }
-    // If this is a new room, add to list.
-    // else if (!this.state.rooms.find((room) => room.name == new_room_name)) {
-    //   console.log("setCurrentRoom new room", new_room_name);
-    //   // A newly added room, which might have had stuff. Load into state
-    //   this.setState((prevState) => ({
-    //     rooms: [...prevState.rooms, { name: new_room_name, stuff: stuff }],
-    //     current_room: new_room_name,
-    //   }));
-    // }
-    else {
-      this.setState({ current_room: new_room_name });
+      const { current_room } = this.state;
+      this.setState({
+        current_room: new_room_name,
+        previous_room: current_room,
+      });
+    } else if (new_room_name === null) {
+      // The indication user hit cancel on add room button.
+      const { previous_room } = this.state;
+      this.setState({
+        current_room: previous_room,
+        previous_room: null,
+      });
+    } else {
+      this.setState({ current_room: room });
     }
   };
 
@@ -77,7 +88,12 @@ class HomePage extends Component {
       detailView = <></>;
     } else if (current_room == "add_room") {
       // Show Add Room detail comp.
-      detailView = <AddRoomDetail addRoom={this.addRoom}></AddRoomDetail>;
+      detailView = (
+        <AddRoomDetail
+          setCurrentRoom={this.setCurrentRoom}
+          addRoom={this.addRoom}
+        ></AddRoomDetail>
+      );
     }
 
     return (

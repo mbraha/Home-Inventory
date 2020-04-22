@@ -25,33 +25,33 @@ class AuthProvider extends Component {
 
   async componentDidMount() {
     console.log("AuthProvider componentDidMount state", this.state);
+    const { refresh_token } = this.state;
 
-    // Try and get a new access token
-    const new_access_token_result = await get_new_access_token(
-      this.state.refresh_token
-    );
-    console.log("AuthProvider didMount new_token", new_access_token_result);
-    console.log("AuthProvider componentDidMount state, later", this.state);
-
-    // Set auth status based on result.
+    // Set auth state based on eventual refresh result.
     let loginStatus = false;
-    let refresh_token = null;
     let access_token = null;
     let timer_id = null;
-    if (
-      this.state.refresh_token &&
-      new_access_token_result &&
-      new_access_token_result.hasOwnProperty("access_token")
-    ) {
-      loginStatus = true;
-      access_token = new_access_token_result.access_token;
-      timer_id = setInterval(() => this.silentRefresh(), 1000 * 60 * 14);
-    } else if (new_access_token_result == 401) {
-      // Refresh token revoked
-      localStorage.removeItem("refresh_token");
-      localStorage.removeItem("current_user");
+    if (refresh_token) {
+      // Token still valid, get new access token.
+      // Try and get a new access token
+      const new_access_token_result = await get_new_access_token(
+        this.state.refresh_token
+      );
+      console.log("AuthProvider didMount new_token", new_access_token_result);
+      console.log("AuthProvider componentDidMount state, later", this.state);
+      if (
+        new_access_token_result &&
+        new_access_token_result.hasOwnProperty("access_token")
+      ) {
+        loginStatus = true;
+        access_token = new_access_token_result.access_token;
+        timer_id = setInterval(() => this.silentRefresh(), 1000 * 60 * 14);
+      } else if (new_access_token_result == 401) {
+        // Refresh token revoked
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("current_user");
+      }
     }
-
     this.setState({
       timer_id: timer_id,
       isLoggedIn: loginStatus,

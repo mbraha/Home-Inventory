@@ -1,5 +1,5 @@
 from flask import Flask, g, current_app, json
-from marshmallow import Schema, fields, post_load, EXCLUDE
+from marshmallow import Schema, fields, post_load, validate, EXCLUDE
 from app.db import db
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -229,7 +229,7 @@ class RoomDB(object):
 
 
 class RoomSchema(Schema):
-    name = fields.Str(required=True)
+    name = fields.Str(validate=validate.Length(min=1))
     stuff = fields.Dict(keys=fields.Str(),
                         values=fields.Str(),
                         allow_none=True)
