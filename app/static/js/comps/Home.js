@@ -40,15 +40,27 @@ class HomePage extends Component {
     }
   }
 
+  addRoom = (new_room_name, stuff = {}) => {
+    this.setState((prevState) => ({
+      rooms: [...prevState.rooms, { name: new_room_name, stuff: stuff }],
+      current_room: new_room_name,
+    }));
+  };
+
   setCurrentRoom = (new_room_name, stuff = {}) => {
+    if (new_room_name == "add_room") {
+      this.setState({ current_room: new_room_name });
+    }
     // If this is a new room, add to list.
-    if (!this.state.rooms.find((room) => room.name == new_room_name)) {
-      // A newly added room, which might have had stuff. Load into state
-      this.setState((prevState) => ({
-        rooms: [...prevState.rooms, { name: new_room_name, stuff: stuff }],
-        current_room: new_room_name,
-      }));
-    } else {
+    // else if (!this.state.rooms.find((room) => room.name == new_room_name)) {
+    //   console.log("setCurrentRoom new room", new_room_name);
+    //   // A newly added room, which might have had stuff. Load into state
+    //   this.setState((prevState) => ({
+    //     rooms: [...prevState.rooms, { name: new_room_name, stuff: stuff }],
+    //     current_room: new_room_name,
+    //   }));
+    // }
+    else {
       this.setState({ current_room: new_room_name });
     }
   };
@@ -65,13 +77,9 @@ class HomePage extends Component {
       detailView = <></>;
     } else if (current_room == "add_room") {
       // Show Add Room detail comp.
-      detailView = (
-        <AddRoomDetail setCurrentRoom={this.setCurrentRoom}></AddRoomDetail>
-      );
+      detailView = <AddRoomDetail addRoom={this.addRoom}></AddRoomDetail>;
     }
-    detailView = (
-      <AddRoomDetail setCurrentRoom={this.setCurrentRoom}></AddRoomDetail>
-    );
+
     return (
       <Grid celled>
         <Grid.Row>
@@ -86,6 +94,7 @@ class HomePage extends Component {
           <Grid.Column width={4}>
             <Grid.Row>
               <RoomView
+                addRoom={this.addRoom}
                 rooms={this.state.rooms}
                 setCurrentRoom={this.setCurrentRoom}
               ></RoomView>

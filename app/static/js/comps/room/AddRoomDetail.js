@@ -5,11 +5,18 @@ import { AuthContext } from "../../AuthProvider";
 
 class AddRoomDetail extends Component {
   static contextType = AuthContext;
-  state = { new_room: "" };
+
+  constructor(props) {
+    console.log("AddRoomDetail constructor");
+    super(props);
+
+    this.state = { new_room: "" };
+  }
 
   handleChange = (event, { value }) => {
     this.setState({ new_room: value });
   };
+
   handleSubmit = async () => {
     console.log("AddRoom handleSubmit context", this.context);
     console.log("AddRoom handleSubmit state", this.state);
@@ -21,9 +28,8 @@ class AddRoomDetail extends Component {
     } else {
       // Room add success. Add to list and change detail view to it.
       console.log("AddRoom handleSubmit success", res);
-      this.props.setCurrentRoom(new_room);
+      this.props.addRoom(new_room);
     }
-    this.setState({ new_room: "" });
   };
 
   render() {

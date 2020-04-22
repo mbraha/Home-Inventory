@@ -183,7 +183,7 @@ class Room(Resource):
         msg = None
         rooms = url_args['room_name']
         if u.remove_room(rooms):
-            if room:
+            if rooms:
                 msg = {'success': 'deleted room: ' + " ".join(rooms)}, 200
             else:
                 msg = {'success': 'deleted all rooms'}, 200
