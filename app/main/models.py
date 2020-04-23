@@ -229,7 +229,7 @@ class RoomDB(object):
 
 
 class RoomSchema(Schema):
-    name = fields.Str(validate=validate.Length(min=1))
+    name = fields.Str()
     stuff = fields.Dict(keys=fields.Str(),
                         values=fields.Str(),
                         allow_none=True)

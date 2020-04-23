@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import Greeter from "./Greeter";
-import { RoomView, AddRoomDetail } from "./room";
+import { RoomView, AddRoomForm } from "./room";
 import { Grid, Divider } from "semantic-ui-react";
 import { AuthContext } from "../AuthProvider";
 import { get_user } from "../utils";
@@ -89,12 +89,18 @@ class HomePage extends Component {
     } else if (current_room == "add_room") {
       // Show Add Room detail comp.
       detailView = (
-        <AddRoomDetail
+        <AddRoomForm
           setCurrentRoom={this.setCurrentRoom}
           addRoom={this.addRoom}
-        ></AddRoomDetail>
+        ></AddRoomForm>
       );
     }
+    detailView = (
+      <AddRoomForm
+        setCurrentRoom={this.setCurrentRoom}
+        addRoom={this.addRoom}
+      ></AddRoomForm>
+    );
 
     return (
       <Grid celled>

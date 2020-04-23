@@ -13,6 +13,7 @@ user_schema = UserSchema()
 PARSE_ERROR = -1
 PARSE_ERROR_MSG = {'error': 'parse req err'}, 500
 # TODO: Could this all be in a custom RequestParser class?
+# TODO: Parsers can inherit from each other. See flask restful docs.
 
 user_parser = reqparse.RequestParser()
 user_parser.add_argument('username')
