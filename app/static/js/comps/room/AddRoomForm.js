@@ -10,26 +10,59 @@ class AddRoomForm extends Component {
     console.log("AddRoomForm constructor");
     super(props);
 
-    this.state = { new_room: "", add_stuff_count: 0 };
+    this.state = {
+      room_name: "",
+      stuff: [],
+      add_stuff_count: 0,
+    };
   }
 
-  handleChange = (event, { value }) => {
-    this.setState({ new_room: value });
+  handleChange = (event, { index, name, value }) => {
+    let current_stuff = this.state.stuff.slice();
+    if (index == current_stuff.length) {
+      // New item
+      let new_item = { [name]: value };
+      current_stuff.push(new_item);
+    } else {
+      // Item already exists
+      let current_item = current_stuff[index];
+      current_item[[name]] = value;
+      current_stuff[index] = current_item;
+    }
+    this.setState({ stuff: current_stuff });
+  };
+
+  handleNameChange = (e, { value }) => {
+    this.setState({ room_name: value });
   };
 
   handleSubmit = async () => {
     console.log("AddRoom handleSubmit context", this.context);
     console.log("AddRoom handleSubmit state", this.state);
-    const { new_room } = this.state;
-    let res = await add_room(this.context.state.current_user, new_room);
+    let { room_name, stuff } = this.state;
+    stuff = this.packStuff(stuff);
+    let res = await add_room(this.context.state.current_user, room_name, stuff);
 
-    if (typeof res === "number") {
-      console.log("AddRoom handleSubmit error", res);
-    } else {
-      // Room add success. Add to list and change detail view to it.
-      console.log("AddRoom handleSubmit success", res);
-      this.props.addRoom(new_room);
+    // if (typeof res === "number") {
+    //   console.log("AddRoom handleSubmit error", res);
+    // } else {
+    //   // Room add success. Add to list and change detail view to it.
+    //   console.log("AddRoom handleSubmit success", res);
+    //   this.props.addRoom(room_name);
+    // }
+  };
+
+  packStuff = (stuff) => {
+    let result = {};
+    for (let item of stuff) {
+      console.log("packing", item);
+      item = Object.values(item);
+      let n = item[0];
+      let v = item[1];
+      result[n] = v;
     }
+    console.log("stuff packed", result);
+    return result;
   };
 
   onClickCancel = () => {
@@ -43,10 +76,7 @@ class AddRoomForm extends Component {
 
   render() {
     console.log("AddRoomForm render state", this.state);
-    const { new_room } = this.state;
-
-    let tempArr = Array(this.state.add_stuff_count);
-    console.log("tempArr", tempArr);
+    const { room_name } = this.state;
 
     /*
     Okay this is crazy. Why not a for loop? To learn!
@@ -60,8 +90,18 @@ class AddRoomForm extends Component {
       .fill(null)
       .map((item, index) => (
         <Form.Group key={index} widths={2}>
-          <Form.Input placeholder="Item Name"></Form.Input>
-          <Form.Input placeholder="Item Value"></Form.Input>
+          <Form.Input
+            placeholder="Item Name"
+            name="name"
+            index={index}
+            onChange={this.handleChange}
+          ></Form.Input>
+          <Form.Input
+            placeholder="Item Value"
+            name="value"
+            index={index}
+            onChange={this.handleChange}
+          ></Form.Input>
         </Form.Group>
       ));
     console.log("addStuffFormField", addStuffFormField);
@@ -70,11 +110,12 @@ class AddRoomForm extends Component {
       <Container>
         <Form onSubmit={this.handleSubmit}>
           <Form.Group inline>
-            <Form.Field required>
+            <Form.Field>
               <Form.Input
+                name="room_name"
                 placeholder="Room Name"
-                onChange={this.handleChange}
-                value={new_room}
+                onChange={this.handleNameChange}
+                value={room_name}
               ></Form.Input>
             </Form.Field>
 

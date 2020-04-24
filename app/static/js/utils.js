@@ -7,6 +7,7 @@ async function perform_fetch({
   method = "POST",
   query = "",
   headers = new Headers(),
+  body = null,
 } = {}) {
   /*
   Custom Wrapper for fetch() to interact with our API.
@@ -14,13 +15,21 @@ async function perform_fetch({
   Return result object on success, HTTP error code otherwise.
   */
   try {
-    console.log(`fetching: /${endpoint}?${query}  ${method} ${headers}`);
+    console.log(
+      `fetching: /${endpoint}?${query}  ${method} ${headers} ${body}`
+    );
+    let options = {
+      method: method,
+      headers: headers,
+      body: JSON.stringify(body),
+    };
+    if (method == "GET") {
+      // No body allowed on GET
+      delete options.body;
+    }
     const response = await fetch(
       "http://127.0.0.1:5000/" + endpoint + "?" + query,
-      {
-        method: method,
-        headers: headers,
-      }
+      options
     );
     if (response.status == 200) {
       const result = await response.json();
@@ -75,7 +84,17 @@ export async function get_user(username) {
   });
 }
 
-export async function add_room(owner, room_name) {
+export async function add_room(owner, room_name, stuff = null) {
   const query = "owner=" + owner + "&" + "room_name=" + room_name;
-  return await perform_fetch({ endpoint: "room", query: query });
+  if (stuff) {
+    let header = new Headers({ "Content-Type": "application/json" });
+    return await perform_fetch({
+      endpoint: "room",
+      query: query,
+      headers: header,
+      body: stuff,
+    });
+  } else {
+    return await perform_fetch({ endpoint: "room", query: query });
+  }
 }
