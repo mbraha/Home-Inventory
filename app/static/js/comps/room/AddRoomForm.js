@@ -43,13 +43,13 @@ class AddRoomForm extends Component {
     stuff = this.packStuff(stuff);
     let res = await add_room(this.context.state.current_user, room_name, stuff);
 
-    // if (typeof res === "number") {
-    //   console.log("AddRoom handleSubmit error", res);
-    // } else {
-    //   // Room add success. Add to list and change detail view to it.
-    //   console.log("AddRoom handleSubmit success", res);
-    //   this.props.addRoom(room_name);
-    // }
+    if (typeof res === "number") {
+      console.log("AddRoom handleSubmit error", res);
+    } else {
+      // Room add success. Add to list and change detail view to it.
+      console.log("AddRoom handleSubmit success", res);
+      this.props.addRoom(room_name, stuff);
+    }
   };
 
   packStuff = (stuff) => {
@@ -79,12 +79,12 @@ class AddRoomForm extends Component {
     const { room_name } = this.state;
 
     /*
-    Okay this is crazy. Why not a for loop? To learn!
+    Okay this is crazy. Why not for loop? To learn!
 
     Using the count in state, create an array of that length filled
     with nulls. Map each null to the desired React element.
     1. Initialize array this way does not set values, only space.
-    2. Map needs values to work on, or it returns nothing.
+    2. Map needs values to work on, or it returns nothing, so we need nulls.
     */
     const addStuffFormField = Array(this.state.add_stuff_count)
       .fill(null)

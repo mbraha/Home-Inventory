@@ -25,6 +25,7 @@ class RoomView extends Component {
 
   render() {
     console.log("RoomView render props", this.props);
+
     let roomListItems =
       this.props.rooms.length > 0 ? (
         this.props.rooms.map((room, index) => (
@@ -32,6 +33,7 @@ class RoomView extends Component {
             key={index}
             name={room.name}
             stuff={room.stuff}
+            setCurrentRoom={this.props.setCurrentRoom}
           ></RoomListItem>
         ))
       ) : (
@@ -40,9 +42,11 @@ class RoomView extends Component {
     return (
       <List divided relaxed selection size="large">
         <List.Header as={Header}>Your Rooms</List.Header>
-        <List.Item name="add_room" onClick={this.onClick}>
-          <List.Content floated="left">Add Room</List.Content>
-          <List.Icon name="plus"></List.Icon>
+        <List.Item as="a" name="add_room" onClick={this.onClick}>
+          <List.Header as={List.Content} floated="left">
+            Add Room
+          </List.Header>
+          <Icon name="plus"></Icon>
         </List.Item>
 
         {roomListItems}

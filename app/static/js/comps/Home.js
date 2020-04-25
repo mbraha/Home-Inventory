@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import Greeter from "./Greeter";
-import { RoomView, AddRoomForm } from "./room";
-import { Grid, Divider } from "semantic-ui-react";
+import { RoomView, AddRoomForm, RoomDetail } from "./room";
+import { Grid, Divider, Container } from "semantic-ui-react";
 import { AuthContext } from "../AuthProvider";
 import { get_user } from "../utils";
 
@@ -57,14 +57,14 @@ class HomePage extends Component {
     }));
   };
 
-  setCurrentRoom = (new_room_name = null, stuff = {}) => {
-    if (new_room_name == "add_room") {
+  setCurrentRoom = (room_name = null, stuff = {}) => {
+    if (room_name == "add_room") {
       const { current_room } = this.state;
       this.setState({
-        current_room: new_room_name,
+        current_room: room_name,
         previous_room: current_room,
       });
-    } else if (new_room_name === null) {
+    } else if (room_name === null) {
       // The indication user hit cancel on add room button.
       const { previous_room } = this.state;
       this.setState({
@@ -72,7 +72,7 @@ class HomePage extends Component {
         previous_room: null,
       });
     } else {
-      this.setState({ current_room: room });
+      this.setState({ current_room: room_name });
     }
   };
 
@@ -80,7 +80,7 @@ class HomePage extends Component {
     console.log("Homepage render context", this.context);
     console.log("Homepage render state", this.state);
 
-    const { current_room } = this.state;
+    const { current_room, rooms } = this.state;
 
     let detailView;
     if (current_room === null) {
@@ -94,22 +94,22 @@ class HomePage extends Component {
           addRoom={this.addRoom}
         ></AddRoomForm>
       );
+    } else {
+      // Render RoomDetail for current room
+      detailView = (
+        <RoomDetail
+          room={rooms.find((r) => r.name == current_room)}
+        ></RoomDetail>
+      );
     }
-    detailView = (
-      <AddRoomForm
-        setCurrentRoom={this.setCurrentRoom}
-        addRoom={this.addRoom}
-      ></AddRoomForm>
-    );
-
     return (
-      <Grid celled>
+      <Grid celled container>
         <Grid.Row>
           <Greeter></Greeter>
         </Grid.Row>
 
         <Grid.Row>
-          <Divider hidden>Div</Divider>
+          <Divider fitted hidden></Divider>
         </Grid.Row>
 
         <Grid.Row columns={3}>
@@ -117,16 +117,14 @@ class HomePage extends Component {
             <Grid.Row>
               <RoomView
                 addRoom={this.addRoom}
-                rooms={this.state.rooms}
+                rooms={rooms}
                 setCurrentRoom={this.setCurrentRoom}
               ></RoomView>
             </Grid.Row>
           </Grid.Column>
 
           <Grid.Column width={2}>
-            <Divider hidden vertical>
-              Div
-            </Divider>
+            <Divider hidden vertical></Divider>
           </Grid.Column>
 
           <Grid.Column width={6}>{detailView}</Grid.Column>

@@ -1,16 +1,5 @@
 import React, { Component } from "react";
-import {
-  List,
-  Header,
-  Input,
-  Icon,
-  Grid,
-  Modal,
-  Form,
-  Button,
-} from "semantic-ui-react";
-import { add_room } from "../../utils";
-import { AuthContext } from "../../AuthProvider";
+import { List } from "semantic-ui-react";
 
 class RoomListItem extends Component {
   constructor(props) {
@@ -22,7 +11,12 @@ class RoomListItem extends Component {
     };
   }
 
+  onClick = (e, props) => {
+    this.props.setCurrentRoom(this.props.name);
+  };
+
   render() {
+    console.log("RoomListItem render props", this.props);
     return (
       <List.Item
         header={this.props.name}
