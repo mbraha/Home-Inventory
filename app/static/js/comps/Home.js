@@ -51,6 +51,7 @@ class HomePage extends Component {
   }
 
   addRoom = (new_room_name, stuff = {}) => {
+    console.log("AddRoom stuff", stuff);
     this.setState((prevState) => ({
       rooms: [...prevState.rooms, { name: new_room_name, stuff: stuff }],
       current_room: new_room_name,
@@ -76,6 +77,57 @@ class HomePage extends Component {
     }
   };
 
+  stuffUpdated = (room_name, changes) => {
+    // Because we have nested objects in array, we need deep
+    // copy to avoid unwanted nested mutations.
+    // This seems to be a nice way to deepcopy
+    let rooms = JSON.parse(JSON.stringify(this.state.rooms));
+    console.log("Home stuffUpdated state", rooms);
+    // Get room from state
+    let room = rooms.find((r) => r.name == room_name);
+    console.log("Home stuffUpdated room", room);
+    console.log("Home stuffUpdated changes", changes);
+    const item_name = Object.keys(changes)[0];
+    changes = changes[item_name];
+
+    let name_update = changes.name ? changes.name : item_name;
+    let value_update = changes.value ? changes.value : room.stuff[item_name];
+    console.log(
+      "stuffUpdated name_update, value_update",
+      name_update,
+      value_update
+    );
+
+    // // Replace the item_name in stuff with updates
+    let newArr = rooms.map((r) => {
+      console.log("map r", r);
+      if (r.name == room_name) {
+        console.log("map r match");
+        r.stuff[[name_update]] = value_update;
+      }
+      return r;
+    });
+    console.log("stuffUpdated oldArr", this.state.rooms);
+    console.log("stuffUpdated newArr", newArr);
+    this.setState((prevState) => ({ ...prevState.rooms, newArr }));
+    // let current_stuff = this.state.stuff.slice();
+    // if (index == current_stuff.length) {
+    //   // New item
+    //   let new_item = { [name]: value };
+    //   current_stuff.push(new_item);
+    // } else {
+    //   // Item already exists
+    //   let current_item = current_stuff[index];
+    //   current_item[[name]] = value;
+    //   current_stuff[index] = current_item;
+    // }
+    // this.setState((prevState) => ({
+    //   rooms: {
+    //     ...prevState.rooms,
+    //   },
+    // }));
+  };
+
   render() {
     console.log("Homepage render context", this.context);
     console.log("Homepage render state", this.state);
@@ -99,6 +151,7 @@ class HomePage extends Component {
       detailView = (
         <RoomDetail
           room={rooms.find((r) => r.name == current_room)}
+          stuffUpdated={this.stuffUpdated}
         ></RoomDetail>
       );
     }

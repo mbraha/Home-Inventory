@@ -2,7 +2,10 @@ body {
   background-color: gray;
 }
 
-#add_room_icon {
-  margin-left: 10px;
-  margin-top: 1px;
+#save_stuff_icon {
+  margin-top: 5px;
+}
+
+#save_stuff_value_icon {
+  margin-top: 5px;
 }

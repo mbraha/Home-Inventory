@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import { Checkbox, Table } from "semantic-ui-react";
+import StuffDetailRow from "./StuffDetailRow";
 
 class RoomDetail extends Component {
   unpackStuff = (stuff) => {
@@ -15,22 +16,21 @@ class RoomDetail extends Component {
   render() {
     console.log("RoomDetail props", this.props);
     const { name: room_name, stuff } = this.props.room;
-    // const propRoom = { name: "den", stuff: { bed: "500", lamp: "70" } };
     const items = this.unpackStuff(stuff);
     let itemRows = items.map((item, index) => (
-      <Table.Row key={index}>
-        <Table.Cell>{item.name}</Table.Cell>
-        <Table.Cell>${item.value}</Table.Cell>
-        <Table.Cell>
-          <Checkbox name={item.name} onChange={this.onChangeEditBox}></Checkbox>
-        </Table.Cell>
-      </Table.Row>
+      <StuffDetailRow
+        stuffUpdated={this.props.stuffUpdated}
+        room={room_name}
+        key={index}
+        item={item}
+      ></StuffDetailRow>
     ));
+    console.log("RoomDetail itemRows", itemRows);
     return (
-      <Table celled>
+      <Table size="large" celled>
         <Table.Header>
           <Table.Row>
-            <Table.HeaderCell colSpan="2">{room_name}</Table.HeaderCell>
+            <Table.HeaderCell colSpan="3">{room_name}</Table.HeaderCell>
           </Table.Row>
           <Table.Row>
             <Table.HeaderCell>Name</Table.HeaderCell>

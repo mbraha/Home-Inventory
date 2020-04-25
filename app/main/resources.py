@@ -245,7 +245,7 @@ class Stuff(Resource):
     '''
     def post(self):
         url_args, json_data = fetch_room_args()
-        if url_args[0] == PARSE_ERROR:
+        if url_args == PARSE_ERROR:
             return PARSE_ERROR_MSG
 
         print('Stuff POST', url_args, json_data)

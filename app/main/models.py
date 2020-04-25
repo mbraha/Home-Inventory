@@ -84,6 +84,7 @@ class UserDB(object):
         else:
             # Because of $pull, all rooms with this name will be deleted.
             # Client should take care of enforcing unique names.
+            room = room if isinstance(room, list) else [room]
             print("remove these rooms", room)
             res = db.update({"username": self.username},
                             {"$pull": {
@@ -131,6 +132,7 @@ class RoomDB(object):
 
         Does not preserve item placement in DB's room array.
         '''
+        # TODO: Do this in one DB operation?
         # Mongo does not support $rename on embedded doc in array.
         # Instead, $pull the old room and $push the new one
         db.update({"username": self.owner},
@@ -156,7 +158,7 @@ class RoomDB(object):
                 "value": "item_value"
             },
         }
-        name or value may not be present
+        name or value may not null, indicating no update
         '''
         selector = {"username": self.owner, "rooms.name": self.name}
 
@@ -181,21 +183,20 @@ class RoomDB(object):
             elif change.get("name"):
                 # Update item name.
                 set_cmd["$set"]["rooms.$[element]" + ".stuff." +
-                                change["name"]] = self.rooms[key]
+                                change["name"]] = self.stuff[key]
+                unset_cmd["$unset"]["rooms.$[element]" + ".stuff." + key] = ""
             elif change.get("value"):
                 # Update item value.
                 set_cmd["$set"]["rooms.$[element]" + ".stuff." +
-                                self.stuff[key]] = change["value"]
+                                key] = change["value"]
 
-        # print("unset_cmd", unset_cmd)
-        # print("set_cmd", set_cmd)
-        # print("selector", selector)
-        update_cmd = set_cmd
+        print("unset_cmd", unset_cmd)
+        print("set_cmd", set_cmd)
+        print("selector", selector)
+
         if len(unset_cmd["$unset"]) > 0:
-            update_cmd["$unset"] = unset_cmd["$unset"]
-        # print("update_cmd", update_cmd)
-
-        return db.update(selector, update_cmd, array_filters=arr_filter)
+            db.update(selector, unset_cmd, array_filters=arr_filter)
+        return db.update(selector, set_cmd, array_filters=arr_filter)
 
     def remove_stuff(self, items=None):
         '''Remove items from stuff in this room in DB.

@@ -33,6 +33,7 @@ class MongoDB(object):
                array_filters=None,
                collection="users"):
         '''pymongo only offers update_one and update_many'''
+        print("db update called")
         result = None
         cmd = None
         if upsert:

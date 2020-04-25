@@ -98,3 +98,14 @@ export async function add_room(owner, room_name, stuff = null) {
     return await perform_fetch({ endpoint: "room", query: query });
   }
 }
+
+export async function update_stuff(owner, room_name, stuff) {
+  const query = "owner=" + owner + "&" + "room_name=" + room_name;
+  let header = new Headers({ "Content-Type": "application/json" });
+  return await perform_fetch({
+    endpoint: "stuff",
+    query: query,
+    headers: header,
+    body: stuff,
+  });
+}
