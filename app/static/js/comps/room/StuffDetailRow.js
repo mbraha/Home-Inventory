@@ -22,9 +22,8 @@ class StuffDetailRow extends Component {
   */
   constructor(props) {
     super(props);
-    console.log("StuffDetailRow props", props);
+    console.log("StuffDetailRow constructor props", props);
     const { name, value } = props.item;
-
     // To detect if a change is made, we determine if stuff is "dirty"
     this.state = {
       name: name,
@@ -34,33 +33,17 @@ class StuffDetailRow extends Component {
     };
   }
 
-  // isStuffDirty = (name, new_value) => {
-  //   // If dirty, return values
-  //   // localCompare returns 0 if same, [-1, 1] otherwise
-  //   let { name, value } = this.state;
-  //   let { item } = this.props;
-  //   let dirty_name = null;
-  //   let dirty_value = null;
-  //   if (name != item.name) {
-  //     dirty_name = name;
-  //   }
-  //   if (value != item.value) {
-  //     dirty_value = value;
-  //   }
-
-  //   return [dirty_name, dirty_value];
-  // };
-
   getDirtyStuffStatus = (name, new_value) => {
     // If dirty, return true
     let { item } = this.props;
     return new_value != item[[name]];
   };
 
-  onChangeEditBox = (e, props) => {
-    console.log("onChangeEditBox props", props);
+  onChangeEditBox = (e, { checked }) => {
+    console.log("onChangeEditBox props", this.props);
+    console.log("onChangeEditBox state", this.state);
 
-    this.setState({ edit_active: props.checked });
+    this.setState({ edit_active: checked });
   };
 
   onChange = (e, { name, value }) => {
@@ -145,8 +128,8 @@ class StuffDetailRow extends Component {
         </Table.Cell>
         <Table.Cell>
           <Checkbox
-            id="edit_stuff_box"
             onChange={this.onChangeEditBox}
+            id={"edit_stuff_box".concat(name)}
           ></Checkbox>
           {extraIcons}
         </Table.Cell>
