@@ -30,6 +30,7 @@ class StuffDetailRow extends Component {
       value: value,
       edit_active: false,
       stuff_dirty: false,
+      checked: false,
     };
   }
 
@@ -43,7 +44,7 @@ class StuffDetailRow extends Component {
     console.log("onChangeEditBox props", this.props);
     console.log("onChangeEditBox state", this.state);
 
-    this.setState({ edit_active: checked });
+    this.setState({ edit_active: checked, checked: checked });
   };
 
   onChange = (e, { name, value }) => {
@@ -76,7 +77,7 @@ class StuffDetailRow extends Component {
       // Stuff update success. Let Home know so all sub-components render.
       console.log("onClickSave success", res);
       this.props.stuffUpdated(room, payload);
-      this.setState({ edit_active: false, stuff_dirty: false });
+      this.setState({ edit_active: false, stuff_dirty: false, checked: false });
     }
   };
 
@@ -88,7 +89,7 @@ class StuffDetailRow extends Component {
   render() {
     console.log("StuffDetail props", this.props);
     console.log("StuffDetail state", this.state);
-    const { name, value, edit_active, stuff_dirty } = this.state;
+    const { name, value, edit_active, stuff_dirty, checked } = this.state;
     let extraIcons = null;
     if (stuff_dirty) {
       extraIcons = (
@@ -128,6 +129,7 @@ class StuffDetailRow extends Component {
         </Table.Cell>
         <Table.Cell>
           <Checkbox
+            checked={checked}
             onChange={this.onChangeEditBox}
             id={"edit_stuff_box".concat(name)}
           ></Checkbox>
